@@ -32,4 +32,8 @@ a {
   padding: 20px;
 
 }
+
+.form-errors {
+  color: red;
+}
 </style>

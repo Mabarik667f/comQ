@@ -1,29 +1,37 @@
 <script>
 import { ref } from 'vue';
 import register from '@/hooks/register';
-import registerValidator from "@/validators/registerValidator";
+import baseValidator from "@/validators/baseValidator";
 export default {
 
     setup() {
         const formData = ref({
-                login: '',
+                username: '',
                 email: '',
                 password: '',
                 password2: ''
             })
 
         let errors = ref({
-            login: '',
+            username: '',
             email: '',
             password: '',
             password2: '',
         })
         
         
-        const registerHook = () => {
-            const {flag} = registerValidator(formData.value, errors);
+        const registerHook = async () => {
+            const {flag} = await baseValidator(formData.value, errors);
             if (!flag.value) {
-                register(formData.value);
+                const updatedErrors = await register(formData.value, errors.value);
+
+                for (const field in errors.value) {
+                    errors.value[field] = '';
+                }
+                for (const key in updatedErrors.value) {
+                    const errorMessage = updatedErrors.value[key].join(' '); 
+                    errors.value[key] = errorMessage;
+                }
             }
         }
         return {registerHook, formData, errors}
@@ -40,13 +48,13 @@ export default {
         </template>
         <template v-slot:fields>
             <div class="mb-3">
-                <label for="loginInput" class="form-label">Login</label>
+                <label for="usernameInput" class="form-label">Login</label>
                     <com-input
-                    v-model="formData.login"
-                    id="loginInput"
+                    v-model="formData.username"
+                    id="usernameInput"
                     class="form-control">
                     </com-input>
-                <span v-if="errors.login">{{ errors.login }}</span>
+                <span v-if="errors.username" class="form-errors">{{ errors.username }}</span>
 
             </div>
             <div class="mb-3">
@@ -58,7 +66,7 @@ export default {
                 class="form-control"
                 placeholder="name@example.com">
                 </com-input>
-                <span v-if="errors.email">{{ errors.email }}</span>
+                <span v-if="errors.email" class="form-errors">{{ errors.email }}</span>
 
             </div>
             <div class="mb-3">
@@ -70,7 +78,7 @@ export default {
                 id="passwordInput"
                 class="form-control">
                 </com-input>
-                <span v-if="errors.password">{{ errors.password }}</span>
+                <span v-if="errors.password" class="form-errors">{{ errors.password }}</span>
                 <div class="form-text">
                     Ваш пароль должен состоять из 8-20 символов
                 </div>
@@ -83,7 +91,7 @@ export default {
                 id="password2Input"
                 class="form-control">
                 </com-input>
-                <span v-if="errors.password2">{{ errors.password2 }}</span>
+                <span v-if="errors.password2" class="form-errors">{{ errors.password2 }}</span>
             </div>
         </template>
         <template v-slot:button>

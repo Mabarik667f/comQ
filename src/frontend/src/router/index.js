@@ -4,13 +4,23 @@ import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
 import store from '@/store'
 
-const authGuard = (to, from, next) => {
-  if(!store.state.auth.isAuth) {
+const authGuard = async (to, from, next) => {
+  const isVerify = await store.dispatch('verifyToken');
+  if(!store.state.auth.isAuth && isVerify) {
     next('/login')
   } else {
-    next('/')
+    next()
   }
 }
+
+const userAuth = async (to, from, next) => {
+  if(store.state.auth.isAuth) {
+    next('/');
+  } else {
+    next();
+  }
+}
+
 const routes = [
   {
     path: '/',
@@ -30,12 +40,14 @@ const routes = [
     path: '/register',
     name: 'register',
     component: RegisterView,
+    beforeEnter: userAuth
     
   },
   {
     path: '/login',
     name: 'login',
-    component: LoginView
+    component: LoginView,
+    beforeEnter: userAuth
   }
 ]
 
@@ -44,4 +56,9 @@ const router = createRouter({
   routes
 })
 
+router.beforeEach((to, from, next) => {
+  store.dispatch('setIsAuth').then(() => {
+    next();
+  });
+})
 export default router
