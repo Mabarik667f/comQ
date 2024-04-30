@@ -1,7 +1,7 @@
-import router from "@/router";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {baseHeaders} from "@/headers/baseHeaders";
+import {authHeaders} from "@/headers/authHeaders";
 
 
 export const authModule = {
@@ -20,104 +20,111 @@ export const authModule = {
     },
 
     actions: {
-        login({dispatch}, formData) {
-            axios.post('v1/users/login/', {
-                username: formData.login,
-                password: formData.password
-            },
-            {
-                headers: {
-                    ...baseHeaders
-                }
-            })
-            .then(response => {
-                if (response.status === 200) {
+        async login({dispatch}, {formData}) {
+            try {
+                const response = await axios.post('v1/users/login/', {
+                    username: formData.login,
+                    password: formData.password
+                },
+                {
+                    headers: {
+                        ...baseHeaders,
+                        ...authHeaders
+                    }
+                })
+                if (response.status === 201) {
                     Cookies.set('access', response.data.access);
                     Cookies.set('refresh', response.data.refresh);
 
                     Cookies.set('isAuth', true);
                     dispatch('setIsAuth');
-                    router.push('/');
 
                 }
-            })
-            .catch(error => {
+            }
+            catch(error) {
                 console.log(error);
-            })
+                throw error;
+            }
 
         },
 
         logout({dispatch}) {
-            axios.post('v1/users/logout/', {
-                refresh: Cookies.get('refresh')
-            },
-            {
-                headers: {
-                    ...baseHeaders
-                }
-            })
-            .then(response => {
-                if (response.status === 201) {
-                    Cookies.remove('access');
-                    Cookies.remove('refresh');
+            if (Cookies.get('access')) {
+                axios.post('v1/users/logout/', {
+                    refresh: Cookies.get('refresh')
+                },
+                {
+                    headers: {
+                        ...baseHeaders,
+                        ...authHeaders
+                    }
+                    
+                })
+                .then(response => {
+                    if (response.status === 200) {
+                        Cookies.remove('access');
+                        Cookies.remove('refresh');
+                    }
 
-                    Cookies.set('isAuth', false);
-                    dispatch('setIsAuth');
-                }
-
-            })
-            .catch(error => {
-                console.log(error);
-            })
+                })
+                .catch(error => {
+                    console.log(error);
+                })
+            }
+            Cookies.set('isAuth', false);
+            dispatch('setIsAuth');
+            window.location.reload();
 
         },
 
-        refreshToken({dispatch}) {
-            axios.post('v1/users/refresh/', {
-                refresh: Cookies.get('refresh')
-            },
-            {
-                headers: {
-                    ...baseHeaders
-                }
-            })
-            .then(response => {
-                if (response.status === 201) {
+        async refreshToken({dispatch}) {
+            try {
+                const response = await axios.post('v1/users/login/refresh/', {
+                    refresh: Cookies.get('refresh')
+                },
+                {
+                    headers: {
+                        ...baseHeaders,
+                        ...authHeaders
+                    }
+                })
+                
+                if (response.status === 200) {
                     Cookies.set('access', response.data.access);
-                } else {
-                    dispatch('logout');
                 }
-            })
-            .catch(error => {
-                console.log(error);
-            })
+            
+            }
+            catch{
+                dispatch('logout');
+            }
         },
         async verifyToken({dispatch}) {
             if(Cookies.get('access')) {
                 
                 try {
-                    const response = await axios.post('v1/users/login/verify/', {
+                    await axios.post('v1/users/login/verify/', {
                       token: Cookies.get('access')
                     }, {
                       headers: {
-                        ...baseHeaders
+                        ...baseHeaders,
+                        ...authHeaders
                       }
                     });
                     
-                    if (response.status === 200) {
-                      return true;
-                    } else if (response.status !== 401){
-                      dispatch('refreshToken');
-                    }
                   } catch {
-                    dispatch('logout');
-                    return false
+                        dispatch('refreshToken');
                   }
             }
         },
 
         setIsAuth({commit}) {
-            commit('setAuth', {isAuth: Cookies.get('isAuth')});
+            if (!Cookies.get('isAuth')) {
+                Cookies.set('isAuth', false);
+            }
+
+            const isAuthValue = Cookies.get('isAuth');
+            const val = isAuthValue === 'true';
+            commit('setAuth', {isAuth: val});
         }
         
     }

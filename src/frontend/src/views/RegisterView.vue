@@ -18,20 +18,23 @@ export default {
             password: '',
             password2: '',
         })
-        
+
         
         const registerHook = async () => {
             const {flag} = await baseValidator(formData.value, errors);
             if (!flag.value) {
                 const updatedErrors = await register(formData.value, errors.value);
 
-                for (const field in errors.value) {
-                    errors.value[field] = '';
-                }
                 for (const key in updatedErrors.value) {
                     const errorMessage = updatedErrors.value[key].join(' '); 
                     errors.value[key] = errorMessage;
                 }
+
+                if (updatedErrors) {
+                    formData.value['password'] = '';
+                    formData.value['password2'] = '';
+                }
+
             }
         }
         return {registerHook, formData, errors}

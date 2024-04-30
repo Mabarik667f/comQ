@@ -24,7 +24,6 @@ export default async function register(formData) {
         
         return {}
     } catch (error){
-        console.log(error);
         const responseData = error.response.data;
         for (let key in responseData) {
             updatedErrors.value[key] = [];
@@ -32,6 +31,7 @@ export default async function register(formData) {
         for (let key in responseData) {
             updatedErrors.value[key] = responseData[key];
         }
+
         return updatedErrors;
     }
     

@@ -4,9 +4,10 @@ import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
 import store from '@/store'
 
+
 const authGuard = async (to, from, next) => {
-  const isVerify = await store.dispatch('verifyToken');
-  if(!store.state.auth.isAuth && isVerify) {
+  store.dispatch('verifyToken');
+  if(!store.state.auth.isAuth) {
     next('/login')
   } else {
     next()
@@ -14,6 +15,7 @@ const authGuard = async (to, from, next) => {
 }
 
 const userAuth = async (to, from, next) => {
+  store.dispatch('verifyToken');
   if(store.state.auth.isAuth) {
     next('/');
   } else {
