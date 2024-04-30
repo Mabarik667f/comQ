@@ -17,18 +17,35 @@ Including another URLconf
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+
+from rest_framework import permissions
 
 from .settings import MEDIA_URL, MEDIA_ROOT
-# from users.views import UserViewSet
-#
-# router = DefaultRouter()
-# router.register(r'users', UserViewSet)
 
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title='Comq API',
+        default_version='v1',
+        description='Endpoints',
+        terms_of_service='https://www.google.com/policies/terms/',
+        contract=openapi.Contact(email="contract@snipets.local"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny,],
+)
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('rest_framework.urls')),
-    path('users/', include('users.urls')),
-    path('main/', include('chats.urls')),
-    # path('', include(router.urls)),
+    #Swagger
+    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+
+    #API
+    path('v1/drf-auth/', include('rest_framework.urls')),
+    path('v1/users/', include('users.urls')),
+    path('v1/main/', include('chats.urls')),
 ] + static(MEDIA_URL, document_root=MEDIA_ROOT)

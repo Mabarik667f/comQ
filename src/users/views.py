@@ -1,20 +1,89 @@
-from django.shortcuts import render
-from rest_framework import viewsets
+from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import viewsets, status
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenVerifyView, TokenBlacklistView, TokenRefreshView
 
-from .models import CustomUser
-from .serializers import UserSerializer
+from .serializers import *
+
+USER: CustomUser = get_user_model()
 
 
-class UserListView(generics.ListAPIView):
-    pass
+class UserShortDataView(generics.RetrieveAPIView):
+    """Получение информации для одного пользователя в коротком формате"""
+    serializer_class = UserShortDataSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = CustomUser.objects.all()
+    lookup_url_kwarg = 'user_id'
 
 
 class UserListOnChat(generics.ListAPIView):
+    """Получение списка пользователей в чате"""
+    serializer_class = UserInChatSerializer
+
+    def get_queryset(self):
+        queryset = CustomUser.objects.all()
+        return queryset
+
+
+class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
+    """Отображение данных пользователя в его профиле"""
+    serializer_class = UserProfileSerializer
+    lookup_url_kwarg = 'user_id'
+
+    def get_queryset(self):
+        queryset = CustomUser.objects.all()
+        return queryset
+
+
+class MyObtainTokenPairView(TokenObtainPairView):
+    """Вьюха для работы с jwt токеном авторизации с кастомными данными"""
+    permission_classes = (AllowAny,)
+    serializer_class = MyTokenObtainPairSerializer
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        serializer: MyTokenObtainPairSerializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.user
+
+            refresh = RefreshToken.for_user(user)
+
+            return Response({'refresh': str(refresh),
+                             'access': str(refresh.access_token)},
+                            status=status.HTTP_201_CREATED)
+        else:
+            errors = serializer.errors
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RegisterView(generics.CreateAPIView):
+    """Вьюха регистрации"""
+
+    permission_classes = (AllowAny,)
+    serializer_class = RegistrationSerializer
+    queryset = CustomUser.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer: RegistrationSerializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.create(validated_data=request.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            errors = serializer.errors
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MyVerifyTokenView(TokenVerifyView):
+    permission_classes = (AllowAny,)
+
+
+class MyTokenBlackListView(TokenBlacklistView):
+    permission_classes = (AllowAny,)
+
+
+class MyRefreshTokenView(TokenRefreshView):
     pass
-
-
-class UserRetrieveDestroyView(generics.RetrieveDestroyAPIView):
-    pass
-
-
