@@ -8,12 +8,13 @@ class Chat(models.Model):
         GROUP = 'G', 'group'
 
     chat_type = models.CharField(max_length=1, choices=TypesOfChats)
-    chat_content = models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='Message', related_name='chat')
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chats')
+    current_users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='current_chats', blank=True)
 
     objects = models.Manager()
 
     def __str__(self):
-        return f"Type: {self.chat_type}, "
+        return f"Type: {self.chat_type}, {self.host}"
 
 
 class MessageContent(models.Model):
@@ -33,9 +34,10 @@ class MessageContent(models.Model):
 
 
 class Message(models.Model):
-    chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE)
-    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE, related_name='messages')
+    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='messages')
     content_type = models.ForeignKey(to=MessageContent, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
     reply = models.BooleanField(default=False)
     text_content = models.TextField()
     audio_content = models.FileField()
@@ -50,10 +52,11 @@ class Message(models.Model):
 
 
 class GroupSettings(models.Model):
-    chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE)
+    chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE, related_name="group_settings")
     avatar = models.ImageField()
-    title = models.CharField(max_length=255)
-    user = models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='GroupSettingsHasUser')
+    title = models.CharField(max_length=255, blank=False, unique=True, null=False)
+    user = models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='GroupSettingsHasUser',
+                                  related_name="group_settings")
 
     objects = models.Manager()
 
@@ -68,8 +71,10 @@ class GroupSettingsHasUser(models.Model):
         OWNER = 'O', 'owner'
         DEFAULT = 'D', 'default'
 
-    group_settings = models.ForeignKey(to=GroupSettings, on_delete=models.CASCADE)
-    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    group_settings = models.ForeignKey(to=GroupSettings, on_delete=models.CASCADE,
+                                       related_name="user_settings_in_group")
+    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                             related_name="user_settings_in_group")
     role = models.CharField(max_length=7, choices=Role)
 
     objects = models.Manager()
