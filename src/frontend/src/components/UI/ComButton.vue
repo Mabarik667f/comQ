@@ -1,5 +1,5 @@
 <template>
- <button class="btn btn-primary com__btn" :type="type">
+ <button :class="{ 'btn': true, 'btn-primary': true, 'com__btn': true, [customClass]: true }" :type="type">
     <slot></slot>
  </button>
 </template>
@@ -11,6 +11,9 @@ export default {
         type: {
             type: String,
             default: 'submit'
+        },
+        customClass: {
+            type: String,
         }
     }
 }

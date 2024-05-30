@@ -3,7 +3,8 @@
     :type="type"
     :value="modelValue"
     @input="$emit('update:modelValue', $event.target.value)"
-    :id="id">
+    :id="id"
+    required>
 </template>
 
 <script>

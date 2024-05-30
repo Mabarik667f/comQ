@@ -9,13 +9,14 @@
   box-sizing: border-box;
   font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
   font-size: 18px;
+  /* background-color: darkgrey; */
 }
 
 a {
   text-decoration: none;
 }
 
-.main {
+/* .main {
 
   display: flex;
   flex-wrap: wrap;
@@ -30,7 +31,7 @@ a {
   border-radius: 20px; 
   padding: 20px;
 
-}
+} */
 
 .form-errors {
   color: red;
