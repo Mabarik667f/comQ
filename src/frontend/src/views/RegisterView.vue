@@ -53,6 +53,7 @@ export default {
             <div class="mb-3">
                 <label for="usernameInput" class="form-label">Login</label>
                     <com-input
+                    required
                     v-model="formData.username"
                     id="usernameInput"
                     class="form-control">
@@ -63,6 +64,7 @@ export default {
             <div class="mb-3">
             <label for="emailInput" class="form-label">Email</label>
                 <com-input
+                required
                 v-model="formData.email"
                 :type="'email'"
                 id="emailInput"
@@ -76,6 +78,7 @@ export default {
             <label for="passwordInput" class="form-label">Пароль</label>
                 
                 <com-input
+                required
                 v-model="formData.password"
                 :type="'password'"
                 id="passwordInput"
@@ -89,6 +92,7 @@ export default {
             <div class="mb-3">
             <label for="password2Input" class="form-label">Повтор пароля</label>
                 <com-input
+                required
                 v-model="formData.password2"
                 :type="'password'"
                 id="password2Input"

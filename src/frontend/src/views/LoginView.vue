@@ -50,6 +50,7 @@ export default {
             <div class="mb-3">
             <label for="emailInput" class="form-label">Email</label>
                 <com-input
+                required
                 v-model="formData.login"
                 id="emailInput"
                 class="form-control"
@@ -58,9 +59,10 @@ export default {
                 <span v-if="errors.login" class="form-errors">{{ errors.login }}</span>
             </div>
             <div class="mb-3">
-            <label for="passwordInput" class="form-label">Пароль</label>
+            <label for="passwordInput" class="form-label" >Пароль</label>
                 
                 <com-input
+                required
                 v-model="formData.password"
                 :type="'password'"
                 id="passwordInput"

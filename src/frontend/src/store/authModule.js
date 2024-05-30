@@ -23,8 +23,8 @@ export const authModule = {
         async login({dispatch}, {formData}) {
             try {
                 const response = await axios.post('v1/users/login/', {
-                    username: formData.login,
-                    password: formData.password
+                    username: formData.login.trim(),
+                    password: formData.password.trim()
                 },
                 {
                     headers: {

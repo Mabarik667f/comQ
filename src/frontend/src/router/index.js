@@ -15,7 +15,6 @@ const authGuard = async (to, from, next) => {
 }
 
 const userAuth = async (to, from, next) => {
-  store.dispatch('verifyToken');
   if(store.state.auth.isAuth) {
     next('/');
   } else {
@@ -27,7 +26,8 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: HomeView,
+    // beforeEnter: authGuard
   },
   {
     path: '/about',

@@ -8,10 +8,10 @@ export default async function register(formData) {
     const updatedErrors = ref({});
     try {
         response = await axios.post('/v1/users/register/', {
-            email: formData.email,
-            username: formData.username,
-            password: formData.password,
-            password2: formData.password2
+            email: formData.email.trim(),
+            username: formData.username.trim(),
+            password: formData.password.trim(),
+            password2: formData.password2.trim()
         },
         {
             headers: {
