@@ -100,7 +100,6 @@ export const authModule = {
         },
         async verifyToken({dispatch}) {
             if(Cookies.get('access')) {
-                
                 try {
                     await axios.post('v1/users/login/verify/', {
                       token: Cookies.get('access')
@@ -110,7 +109,6 @@ export const authModule = {
                         ...authHeaders
                       }
                     });
-                    
                   } catch {
                         dispatch('refreshToken');
                   }

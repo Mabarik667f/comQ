@@ -4,6 +4,7 @@
     :value="modelValue"
     @input="$emit('update:modelValue', $event.target.value)"
     :id="id"
+    :placeholder="placeholder"
     required>
 </template>
 
@@ -21,8 +22,10 @@ export default {
         },
         id: {
             type: String,
-            required: true
         },
+        placeholder: {
+            type: String
+        }
     }
 }
 </script>

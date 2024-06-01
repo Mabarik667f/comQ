@@ -102,7 +102,7 @@ export default {
             </div>
         </template>
         <template v-slot:button>
-            <com-button>Регистрация</com-button>
+            <com-button >Регистрация</com-button>
         </template>
     </com-form>
     

@@ -1,4 +1,3 @@
-// const {Cookies} = require('js-cookie');
 const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
   transpileDependencies: true,
@@ -9,7 +8,7 @@ module.exports = defineConfig({
         logLevel: 'debug'
       },
       // '/ws': {
-      //   target: 'ws://localhost:8000/ws/?token=' + [Cookies.get('access')],
+      //   target: 'ws://localhost:8000',
       //   logLevel: 'debug'
       // }
     }
