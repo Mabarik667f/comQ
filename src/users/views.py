@@ -5,6 +5,8 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenVerifyView, TokenBlacklistView, TokenRefreshView
 
@@ -13,31 +15,36 @@ from .serializers import *
 USER: CustomUser = get_user_model()
 
 
-class UserShortDataView(generics.RetrieveAPIView):
-    """Получение информации для одного пользователя в коротком формате"""
-    serializer_class = UserShortDataSerializer
+class UserDataOnChatView(generics.RetrieveAPIView):
+    """Получаем данные о пользователе в рамках чата"""
+    serializer_class = UserDataOnChatSerializer
+    authentication_classes = [JWTAuthentication]
+    lookup_url_kwarg = "username"
+    lookup_field = 'username'
     permission_classes = [IsAuthenticated]
     queryset = CustomUser.objects.all()
-    lookup_url_kwarg = 'user_id'
 
 
-class UserListOnChat(generics.ListAPIView):
-    """Получение списка пользователей в чате"""
-    serializer_class = UserInChatSerializer
-
-    def get_queryset(self):
-        queryset = CustomUser.objects.all()
-        return queryset
+class UserDataView(generics.RetrieveAPIView):
+    """Получение общих данных о пользователе для главной страницы:
+        списка пользователей в чате
+        статус
+        id
+        имя"""
+    serializer_class = UserDataSerializer
+    authentication_classes = [JWTAuthentication]
+    lookup_url_kwarg = "user_id"
+    permission_classes = [IsAuthenticated]
+    queryset = CustomUser.objects.all()
 
 
 class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
     """Отображение данных пользователя в его профиле"""
     serializer_class = UserProfileSerializer
     lookup_url_kwarg = 'user_id'
-
-    def get_queryset(self):
-        queryset = CustomUser.objects.all()
-        return queryset
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = CustomUser.objects.all()
 
 
 class MyObtainTokenPairView(TokenObtainPairView):
@@ -49,7 +56,6 @@ class MyObtainTokenPairView(TokenObtainPairView):
         serializer: MyTokenObtainPairSerializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.user
-
             refresh = RefreshToken.for_user(user)
 
             return Response({'refresh': str(refresh),
@@ -79,6 +85,7 @@ class RegisterView(generics.CreateAPIView):
 
 class MyVerifyTokenView(TokenVerifyView):
     permission_classes = (AllowAny,)
+    authentication_classes = [JWTAuthentication]
 
 
 class MyTokenBlackListView(TokenBlacklistView):
@@ -86,4 +93,5 @@ class MyTokenBlackListView(TokenBlacklistView):
 
 
 class MyRefreshTokenView(TokenRefreshView):
-    pass
+    """
+    """
