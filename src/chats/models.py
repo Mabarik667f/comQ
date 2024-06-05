@@ -1,5 +1,13 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
+
+
+def group_avatar_upload_path(instance, filename):
+    pass
+
+
+def message_file_content_upload_path(instance, filename):
+    pass
 
 
 class Chat(models.Model):
@@ -9,12 +17,34 @@ class Chat(models.Model):
 
     chat_type = models.CharField(max_length=1, choices=TypesOfChats)
     host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chats')
-    current_users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='current_chats', blank=True)
+    current_users = models.ManyToManyField(settings.AUTH_USER_MODEL,
+                                           related_name='current_chats', blank=True)
 
     objects = models.Manager()
 
     def __str__(self):
         return f"Type: {self.chat_type}, {self.host}"
+
+    @transaction.atomic
+    def add_users(self, users, group_settings=None):
+        if self.chat_type == self.TypesOfChats.PRIVATE and len(users) == 1:
+            user = users[0]
+            self.current_users.add(user)
+        elif self.chat_type == self.TypesOfChats.GROUP and group_settings:
+            for user in users:
+                self.current_users.add(user)
+                group_settings.add_user_to_group(user)
+        else:
+            raise ValueError('error add user in current_users')
+
+    @transaction.atomic
+    def delete_user(self, user):
+        if self.chat_type == 'G':
+            self.current_users.delete(user)
+            group_settings: GroupSettings = GroupSettings.objects.filter(chat=self)
+            group_settings.delete_user_from_group(user)
+        else:
+            raise ValueError('private chat not support this method!')
 
 
 class MessageContent(models.Model):
@@ -40,10 +70,10 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     reply = models.BooleanField(default=False)
     text_content = models.TextField()
-    audio_content = models.FileField()
-    video_content = models.FileField()
-    file_content = models.FileField()
-    img_content = models.ImageField()
+    audio_content = models.FileField(upload_to=message_file_content_upload_path)
+    video_content = models.FileField(upload_to=message_file_content_upload_path)
+    file_content = models.FileField(upload_to=message_file_content_upload_path)
+    img_content = models.ImageField(upload_to=message_file_content_upload_path)
 
     objects = models.Manager()
 
@@ -53,15 +83,34 @@ class Message(models.Model):
 
 class GroupSettings(models.Model):
     chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE, related_name="group_settings")
-    avatar = models.ImageField()
-    title = models.CharField(max_length=255, blank=False, unique=True, null=False)
-    user = models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='GroupSettingsHasUser',
+    avatar = models.ImageField(upload_to=group_avatar_upload_path)
+    title = models.CharField(max_length=255, blank=False, null=False)
+    users = models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='GroupSettingsHasUser',
                                   related_name="group_settings")
 
     objects = models.Manager()
 
     def __str__(self):
-        return f"Chat: {self.chat}, Title: {self.title}, User: {self.user}"
+        return f"Chat: {self.chat}, Title: {self.title}, Users: {self.users.all()}"
+
+    @transaction.atomic
+    def add_user_to_group(self, user, role='default'):
+        if not GroupSettingsHasUser.objects.filter(group_settings=self, user=user).exists():
+            GroupSettingsHasUser.objects.create(group_settings=self, user=user, role=role)
+        else:
+            raise ValueError('Пользователь уже есть в группе')
+
+    @transaction.atomic
+    def delete_user_from_group(self, user):
+        group_settings_has_user: GroupSettingsHasUser = GroupSettingsHasUser.objects.filter(group_settings=self, user=user).exists()
+        if not group_settings_has_user:
+            raise ValueError('Пользователь не состоит в группе')
+        else:
+            group_settings_has_user.delete_user()
+
+    @transaction.atomic
+    def delete_group(self):
+        self.delete()
 
 
 class GroupSettingsHasUser(models.Model):
@@ -81,6 +130,15 @@ class GroupSettingsHasUser(models.Model):
 
     def __str__(self):
         return f"User: {self.user} Role: {self.role} Group_chat: {self.group_settings}"
+
+    def change_role(self, user, role):
+        if role == 'owner':
+            raise ValueError('нельзя присвоить роль создателя')
+        else:
+            self.role = role
+
+    def delete_user(self):
+        self.delete()
 
 
 

@@ -8,22 +8,24 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Auth
 from rest_framework_simplejwt.tokens import Token
 
 from .models import *
+from chats.serializers import ChatSerializer
 
 
-class UserShortDataSerializer(serializers.ModelSerializer):
-    """Сериализатор для получения минимальных данных о пользователе"""
-
-    class Meta:
-        model = CustomUser
-        fields = ['username', 'name', 'img', 'status']
-
-
-class UserInChatSerializer(serializers.ModelSerializer):
-    """Сериализатор для получения данных о пользователе в чате"""
+class UserDataOnChatSerializer(serializers.ModelSerializer):
+    """Получаем данные о пользователе в рамках чата"""
 
     class Meta:
         model = CustomUser
-        fields = ['name', 'img']
+        fields = ['id', 'username', 'name', 'img', 'status']
+
+
+class UserDataSerializer(serializers.ModelSerializer):
+    """Сериализатор для получения общих данных о пользователе"""
+    chats = ChatSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'name', 'img', 'status', 'chats']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -31,7 +33,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'name', 'status', 'img']
+        fields = ['id', 'username', 'name', 'status', 'img', 'email']
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
