@@ -1,10 +1,9 @@
-import axios from "axios";
+import axiosInstance from "@/axiosInstance";
 import Cookies from "js-cookie";
-import {baseHeaders} from "@/headers/baseHeaders";
-import {authHeaders} from "@/headers/authHeaders";
-
+import router from "@/router";
 
 export const authModule = {
+
     state: () => ({
         isAuth: false,
     }),
@@ -22,22 +21,17 @@ export const authModule = {
     actions: {
         async login({dispatch}, {formData}) {
             try {
-                const response = await axios.post('v1/users/login/', {
+                const response = await axiosInstance.post('/v1/users/login/', {
                     username: formData.login.trim(),
                     password: formData.password.trim()
-                },
-                {
-                    headers: {
-                        ...baseHeaders,
-                        ...authHeaders
-                    }
                 })
-                if (response.status === 201) {
+                if (response.status === 200) {
                     Cookies.set('access', response.data.access);
                     Cookies.set('refresh', response.data.refresh);
 
                     Cookies.set('isAuth', true);
                     dispatch('setIsAuth');
+                    router.push('/');
 
                 }
             }
@@ -50,69 +44,23 @@ export const authModule = {
 
         logout({dispatch}) {
             if (Cookies.get('access')) {
-                axios.post('v1/users/logout/', {
+                axiosInstance.post('/v1/users/logout/', {
                     refresh: Cookies.get('refresh')
-                },
-                {
-                    headers: {
-                        ...baseHeaders,
-                        ...authHeaders
-                    }
-                    
                 })
                 .then(response => {
-                    if (response.status === 200) {
-                        Cookies.remove('access');
-                        Cookies.remove('refresh');
+                    if (response.status === 204) {
+                        dispatch('clearAuth');
+                        router.push('/login')
                     }
 
                 })
                 .catch(error => {
                     console.log(error);
+                    dispatch('clearAuth');
+                    router.push('/login')
                 })
             }
-            Cookies.set('isAuth', false);
-            dispatch('setIsAuth');
-            window.location.reload();
 
-        },
-
-        async refreshToken({dispatch}) {
-            try {
-                const response = await axios.post('v1/users/login/refresh/', {
-                    refresh: Cookies.get('refresh')
-                },
-                {
-                    headers: {
-                        ...baseHeaders,
-                        ...authHeaders
-                    }
-                })
-                
-                if (response.status === 200) {
-                    Cookies.set('access', response.data.access);
-                }
-            
-            }
-            catch{
-                dispatch('logout');
-            }
-        },
-        async verifyToken({dispatch}) {
-            if(Cookies.get('access')) {
-                try {
-                    await axios.post('v1/users/login/verify/', {
-                      token: Cookies.get('access')
-                    }, {
-                      headers: {
-                        ...baseHeaders,
-                        ...authHeaders
-                      }
-                    });
-                  } catch {
-                        dispatch('refreshToken');
-                  }
-            }
         },
 
         setIsAuth({commit}) {
@@ -123,6 +71,14 @@ export const authModule = {
             const isAuthValue = Cookies.get('isAuth');
             const val = isAuthValue === 'true';
             commit('setAuth', {isAuth: val});
+        },
+
+        clearAuth({dispatch}) {
+            Cookies.remove('access');
+            Cookies.remove('refresh');
+            Cookies.set('isAuth', false);
+            dispatch('setIsAuth');
+            dispatch('clear')
         }
         
     }

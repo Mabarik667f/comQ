@@ -2,7 +2,6 @@
 import baseValidator from '@/validators/baseValidator';
 import { ref } from 'vue';
 import { useStore } from 'vuex';
-import router from '@/router';
 export default {
     setup() {
         const formData = ref({
@@ -23,8 +22,6 @@ export default {
             if (flag) {
                 try {
                     await store.dispatch('login', {formData: formData.value});
-                    router.push('/');
-                    window.location.reload();
                 } catch (error) {
                     formData.value['password'] = '';
                     errors.value['password'] = 'Неправильный логин или пароль';
