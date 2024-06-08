@@ -81,7 +81,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
 
+
+CHANNEL_LAYERS = {
+    'default': {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [('localhost', 6379)]
+        }
+    }
+}
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -162,7 +172,7 @@ FIXTURE_DIRS = '/fixtures/'
 
 AUTHENTICATION_BACKENDS = [
     'users.backend.JWTAuthBackend',
-    # 'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -189,9 +199,9 @@ CORS_ALLOW_METHODS = (
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
@@ -199,7 +209,7 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = "users.CustomUser"
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -240,5 +250,17 @@ SIMPLE_JWT = {
 
 
 SWAGGER_SETTINGS = {
-
+    "exclude_namespaces": [],
+    "api_version": "0.1",
+    "api_path": '/v1',
+    "enabled_methods": [
+        'get',
+        'post',
+        'update',
+        'patch',
+        'delete'
+    ],
+    'is_authenticated': False,
+    'is_superuser': False
 }
+

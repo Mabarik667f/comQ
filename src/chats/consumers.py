@@ -63,11 +63,13 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     # Receive message from WebSocket
     async def receive_json(self, content):
         message = content["message"]
+        sender = content["sender"]
         chat: Chat = await self.get_chat()
         # Send message to room group
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.message",
-                              "message": message}
+                              "message": message,
+                              "sender": sender}
         )
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.notify",
@@ -76,7 +78,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     # Receive message from room group
     async def chat_notify(self, event):
-        await self.send_json(content=event['users'])
+        await self.send_json({'users': event['users']})
 
     async def chat_message(self, event):
         message = event["message"]
@@ -84,9 +86,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         content_type = await database_sync_to_async(MessageContent.objects.get_or_create)(
             name=MessageContent.TypeOfMessageContent.TEXT
         )
+        user = await database_sync_to_async(CustomUser.objects.get)(pk=int(event['sender']))
         new_message = await database_sync_to_async(Message.objects.create)(
             chat=chat,
-            user=self.scope['user'],
+            user=user,
             content_type=content_type[0],
             text_content=message
         )

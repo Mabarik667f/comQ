@@ -8,6 +8,8 @@ from users.models import CustomUser
 
 class MessageSerializer(serializers.ModelSerializer):
     created_at_formatted = serializers.SerializerMethodField()
+    user = SlugRelatedField(slug_field='username', queryset=CustomUser.objects.all(),
+                            many=False)
 
     class Meta:
         model = Message
@@ -20,8 +22,24 @@ class MessageSerializer(serializers.ModelSerializer):
         return obj.created_at.strftime("%d-%m-%Y %H:%M:%S")
 
 
-class ChatSerializer(serializers.ModelSerializer):
+class ChatCardSerializer(serializers.ModelSerializer):
+    """Отрисовка чатов в sidebar-е"""
     last_message = serializers.SerializerMethodField()
+    current_users = SlugRelatedField(
+        slug_field='username',
+        queryset=CustomUser.objects.all(),
+        many=True)
+    host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+
+    class Meta:
+        model = Chat
+        fields = ('chat_type', 'host', 'current_users', 'last_message', 'pk')
+
+    def get_last_message(self, obj: Chat):
+        return MessageSerializer(obj.messages.order_by('created_at').last()).data
+
+
+class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
     current_users = SlugRelatedField(
         slug_field='username',
@@ -31,10 +49,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ('messages', 'chat_type', 'host', 'current_users', 'last_message', 'pk')
-
-    def get_last_message(self, obj: Chat):
-        return MessageSerializer(obj.messages.order_by('created_at').last()).data
+        fields = ('messages', 'chat_type', 'host', 'current_users', 'pk')
 
     def create(self, validated_data):
         raise NotImplementedError()
@@ -68,6 +83,8 @@ class GroupChatSerializer(ChatSerializer):
         group = Chat.objects.create(chat_type=validated_data['chat_type'],
                                     host=validated_data['host'])
         try:
+            users = validated_data['current_users']
+            users.append(validated_data['host'])
             group.add_users(users=validated_data['current_users'],
                             group_settings=self.get_or_create_group_settings(chat=group))
             return group
@@ -107,6 +124,7 @@ class PrivateChatSerializer(ChatSerializer):
             chat = Chat.objects.create(chat_type=validated_data['chat_type'], host=validated_data['host'])
             try:
                 chat.add_users(validated_data['current_users'])
+                chat.add_users([validated_data['host']])
                 return chat
             except ValueError as error:
                 print("Ошибка добавления пользователей: {}".format(error))
