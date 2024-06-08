@@ -19,7 +19,6 @@ export default {
 
 <template>
     <div class="profile">
-        <img src="../assets/default/defaultChat.jpg" style="width: 300px;">
         <span class="name">{{ user.name }}</span>
         <span class="status">{{ status }}</span>
         <div class="user-status-block">
