@@ -3,10 +3,11 @@ import HomeView from '../views/HomeView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
 import store from '@/store'
+import ProfileView from '@/views/ProfileView.vue'
+import MainChat from '@/components/MainChat.vue'
 
 
 const authGuard = async (to, from, next) => {
-  store.dispatch('verifyToken');
   if(!store.state.auth.isAuth) {
     next('/login')
   } else {
@@ -27,13 +28,15 @@ const routes = [
     path: '/',
     name: 'home',
     component: HomeView,
-    beforeEnter: authGuard
-  },
-  {
-    path: '/about',
-    name: 'about',
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue'),
-    beforeEnter: authGuard
+    beforeEnter: authGuard,
+    children: [
+      {
+        path:'chat/:pk',
+        name: 'chat-detail',
+        component: MainChat,
+        props: true
+      }
+    ]
   },
   {
     path: '/register',
@@ -47,6 +50,12 @@ const routes = [
     name: 'login',
     component: LoginView,
     beforeEnter: userAuth
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: ProfileView,
+    beforeEnter: authGuard
   }
 ]
 
@@ -55,8 +64,11 @@ const router = createRouter({
   routes
 })
 
+
 router.beforeEach((to, from, next) => {
+  
   store.dispatch('setIsAuth').then(() => {
+    store.dispatch('getChatDataCookies')
     next();
   });
 })

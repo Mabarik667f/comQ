@@ -1,7 +1,9 @@
 <script>
 import ChatHeader from '@/components/ChatElements/ChatHeader.vue';
-import ChatContent from "@/components/ChatElements/ChatContent.vue"
-// import Cookies from "js-cookie";
+import ChatContent from "@/components/ChatElements/ChatContent.vue";
+import { onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import getChatData from '@/hooks/chatHooks/getChatData';
 
 export default {
     components: {
@@ -9,8 +11,25 @@ export default {
         ChatContent
     },
     setup() {
-        const ws = new WebSocket("ws://localhost:8000/ws/")
-        console.log(ws);
+        const route = useRoute();
+        const chatId = ref(route.params.pk);
+        const chat = ref({});
+
+        const fetchData = async () => {
+            const {chatData} = await getChatData(chatId.value);
+            chat.value = chatData.value;
+        }
+
+        onMounted( () => {
+            fetchData();
+        })
+
+        watch(() => route.params.pk, (newChatId) => {
+            chatId.value = newChatId;
+            fetchData();
+        })
+        
+        return {chat}
     }
 }
 </script>
@@ -18,7 +37,7 @@ export default {
 <template>
     <div class="chat">
         <ChatHeader></ChatHeader>
-        <ChatContent></ChatContent>
+        <ChatContent :chat="chat"></ChatContent>
     </div>
 </template>
 

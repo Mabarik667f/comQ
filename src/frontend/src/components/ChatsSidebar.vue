@@ -1,27 +1,62 @@
 <script>
 import ChatsHeader from '@/components/ChatsHeader.vue';
 import ChatCard from '@/components/UI/ChatCard.vue';
-import { mapActions } from 'vuex';
-import {ref} from "vue";
+import { mapActions, useStore } from 'vuex';
+import getUserData from '@/hooks/getUserData';
+import { ref, onMounted } from 'vue';
+import getChatCardData from '@/hooks/chatHooks/getChatCardData';
+import router from '@/router';
+import { addWebSocket } from '@/hooks/wsHooks/websockets';
+import Cookies from 'js-cookie';
+
 export default {
     components: {
         ChatsHeader,
         ChatCard,
         
     },
-    data() {
-        return {
-            chats: [{id: 1, title: 'Aboba', lastMessage: "Sos"},
-                    {id: 2, title: 'Aboba', lastMessage: "Sos"},
-                    {id: 3, title: 'Aboba', lastMessage: "Sos"},
-                    {id: 4, title: 'Aboba', lastMessage: "Sos"},
-                    {id: 5, title: 'Aboba', lastMessage: "Sos"}]
-        }
-    },
     setup() {
-        const searchQuery = ref('')
+        const chats = ref([]);
+        const usersChoices = ref([]);
+        const store = useStore();
 
-        return {searchQuery};
+        onMounted(async () => {
+            const {asyncCall} = getUserData();
+            const {userData} = await asyncCall();
+
+            for (let chat of userData.value.chats) {
+                if (chat.chat_type === 'P') {
+                    const addUser = chat.current_users.filter(c => c !== userData.value.username)[0];
+                    usersChoices.value.push({value: addUser,name: addUser})
+                    const {chatData: partnerData} = await getChatCardData(addUser);
+                    chat.partner = partnerData.value;
+                    chats.value.push(chat);
+                } else {
+                    const {chatData: groupSettings} = await getChatCardData(chat.pk);
+                    chat.groupSettings = groupSettings.value;
+                    chats.value.push(chat);
+                }
+                const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`)
+                addWebSocket(chat.pk, ws)
+
+            }
+        })
+
+        const selectChat = async (chat) => {
+            const title = ref('');
+            const imagePath = ref('');
+            if(chat.partner) {
+                title.value = chat.partner.name;
+                imagePath.value = chat.partner.img;
+            } else {
+                title.value = chat.groupSettings.group_settings.title;
+                imagePath.value = chat.groupSettings.group_settings.avatar;
+            }
+            store.commit('setChatData', {title: title.value, imagePath: imagePath.value})
+            store.dispatch('setChatDataCookies', {title: title.value, imagePath: imagePath});
+            router.push({ name: 'chat-detail', params: { pk: chat.pk }});
+        }
+        return {chats, usersChoices, selectChat}
     },
     methods: {
     ...mapActions({
@@ -33,9 +68,9 @@ export default {
 
 <template>
     <div class="chats">
-        <ChatsHeader></ChatsHeader>
-        <div class="short-chat" v-for="chat in chats" :key="chat.id">
-            <ChatCard :chat="chat"></ChatCard>
+        <ChatsHeader :options="usersChoices"></ChatsHeader>
+        <div class="short-chat" v-for="chat in chats" :key="chat.pk">
+            <ChatCard :chat="chat" @click="selectChat(chat)"></ChatCard>
         </div>
         <com-button
         @click="$router.push('/register')">Зарегистрироваться</com-button>
@@ -57,6 +92,7 @@ export default {
     align-items: flex-start;
     width: 500px;
     max-width: 900px;
+    overflow: auto;
 }
 
 .short-chat {
@@ -70,10 +106,5 @@ export default {
 
 .short-chat:hover {
     background-color: rgba(255, 255, 255, 0.2); /* осветление при наведении */
-}
-
-.short-chat-img {
-    width: 65px;
-    border-radius: 50%;
 }
 </style>

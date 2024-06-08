@@ -1,4 +1,5 @@
 <script>
+import { ref, toRefs } from 'vue';
 export default {
   name: "chat-card",
   props: {
@@ -7,23 +8,35 @@ export default {
       required: true
     }
   },
-  methods: {
-    openChat() {
-      console.log(1);
+  setup(props) {
+    const {chat} = toRefs(props);
+    const chatImg = ref('');
+    if (chat.value.chat_type === 'G') {
+      chatImg.value = chat.value.groupSettings.group_settings.avatar
     }
+    else {
+      chatImg.value = chat.value.partner.img;
+    }
+    return {chatImg}
   }
 }
 </script>
 
 <template>
-  <div @click="openChat">
-     
+  <div>
       <div>
-            <img src="defaultChat.jpg" class="chat-img">
+            <img :src="chatImg" class="short-chat-img">
       </div>
       <div>
+        {{ chat.partner }}
+        {{ chat.groupSettings }}
+       
+            <label v-if="chat.chat_type === 'P'">
+              PRIVATE</label>
             <label>{{ chat.title }}</label>
-            <div>{{ chat.lastMessage }}</div>
+            <div>{{ chat.last_message }}</div>
+            
+            
       </div>
         
  
@@ -31,5 +44,8 @@ export default {
 </template>
 
 <style scoped>
-  
+.short-chat-img {
+  width: 65px;
+  border-radius: 50%;
+}
 </style>
