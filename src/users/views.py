@@ -52,19 +52,6 @@ class MyObtainTokenPairView(TokenObtainPairView):
     permission_classes = (AllowAny,)
     serializer_class = MyTokenObtainPairSerializer
 
-    def post(self, request: Request, *args, **kwargs) -> Response:
-        serializer: MyTokenObtainPairSerializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.user
-            refresh = RefreshToken.for_user(user)
-
-            return Response({'refresh': str(refresh),
-                             'access': str(refresh.access_token)},
-                            status=status.HTTP_201_CREATED)
-        else:
-            errors = serializer.errors
-            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class RegisterView(generics.CreateAPIView):
     """Вьюха регистрации"""
@@ -83,15 +70,18 @@ class RegisterView(generics.CreateAPIView):
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class MyVerifyTokenView(TokenVerifyView):
-    permission_classes = (AllowAny,)
+class MyRefreshTokenView(TokenRefreshView):
     authentication_classes = [JWTAuthentication]
 
 
-class MyTokenBlackListView(TokenBlacklistView):
-    permission_classes = (AllowAny,)
+class LogoutView(APIView):
 
+    permission_classes = (IsAuthenticated, )
+    authentication_classes = [JWTAuthentication]
 
-class MyRefreshTokenView(TokenRefreshView):
-    """
-    """
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

@@ -5,10 +5,12 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, AuthUser
-from rest_framework_simplejwt.tokens import Token
+from rest_framework_simplejwt.tokens import Token, RefreshToken
 
 from .models import *
-from chats.serializers import ChatSerializer
+from chats.serializers import ChatCardSerializer
+
+from chats.models import Chat
 
 
 class UserDataOnChatSerializer(serializers.ModelSerializer):
@@ -21,11 +23,15 @@ class UserDataOnChatSerializer(serializers.ModelSerializer):
 
 class UserDataSerializer(serializers.ModelSerializer):
     """Сериализатор для получения общих данных о пользователе"""
-    chats = ChatSerializer(many=True, read_only=True)
+    chats = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'name', 'img', 'status', 'chats']
+
+    def get_chats(self, obj: CustomUser):
+        chats = Chat.objects.filter(current_users=obj)
+        return ChatCardSerializer(chats, many=True).data
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -50,6 +56,20 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def update(self, instance, validated_data):
         raise NotImplementedError()
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        self.token = attrs['refresh']
+        return attrs
+
+    def save(self, **kwargs):
+        try:
+            RefreshToken(self.token).blacklist()
+        except Exception as e:
+            self.fail('bad_token')
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
