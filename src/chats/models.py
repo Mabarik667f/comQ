@@ -1,9 +1,19 @@
+import os.path
+
 from django.db import models, transaction
 from django.conf import settings
+from django.utils import timezone
 
 
 def group_avatar_upload_path(instance, filename):
-    pass
+    ext = filename.split('.')[-1]
+
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    new_filename = f"{timestamp}.{ext}"
+    folder = f'chat_avatars/chat_{instance.id}'
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+    return os.path.join(folder, new_filename)
 
 
 def message_file_content_upload_path(instance, filename):
@@ -33,7 +43,10 @@ class Chat(models.Model):
         elif self.chat_type == self.TypesOfChats.GROUP and group_settings:
             for user in users:
                 self.current_users.add(user)
-                group_settings.add_user_to_group(user)
+                if user == self.host:
+                    group_settings.add_user_to_group(user, role='owner')
+                else:
+                    group_settings.add_user_to_group(user)
         else:
             raise ValueError('error add user in current_users')
 
@@ -83,7 +96,7 @@ class Message(models.Model):
 
 class GroupSettings(models.Model):
     chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE, related_name="group_settings")
-    avatar = models.ImageField(upload_to=group_avatar_upload_path)
+    avatar = models.ImageField(upload_to=group_avatar_upload_path, default='chat_avatars/default.jpg')
     title = models.CharField(max_length=255, blank=False, null=False)
     users = models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='GroupSettingsHasUser',
                                   related_name="group_settings")
