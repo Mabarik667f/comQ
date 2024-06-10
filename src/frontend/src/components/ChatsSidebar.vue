@@ -15,6 +15,7 @@ export default {
         ChatCard,
         
     },
+    
     setup() {
         const chats = ref([]);
         const usersChoices = ref([]);
@@ -26,9 +27,9 @@ export default {
 
             for (let chat of userData.value.chats) {
                 if (chat.chat_type === 'P') {
-                    const addUser = chat.current_users.filter(c => c !== userData.value.username)[0];
-                    usersChoices.value.push({value: addUser,name: addUser})
-                    const {chatData: partnerData} = await getChatCardData(addUser);
+                    const addUser = chat.current_users.filter(c => c.username !== userData.value.username)[0];
+                    usersChoices.value.push({value: addUser.username, name: addUser.name})
+                    const {chatData: partnerData} = await getChatCardData(addUser.username);
                     chat.partner = partnerData.value;
                     chats.value.push(chat);
                 } else {
@@ -36,8 +37,8 @@ export default {
                     chat.groupSettings = groupSettings.value;
                     chats.value.push(chat);
                 }
-                const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`)
-                addWebSocket(chat.pk, ws)
+                const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`);
+                addWebSocket(chat.pk, ws);
 
             }
         })

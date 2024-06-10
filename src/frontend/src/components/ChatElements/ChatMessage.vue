@@ -39,11 +39,11 @@ export default {
 </script>
 
 <template>
-    <div :class="{'left': message.user !== currentUserName,
-                'right': message.user === currentUserName,
+    <div :class="{'left': message.user.username !== currentUserName,
+                'right': message.user.username === currentUserName,
                 'message': true }">
         {{ message.text_content }}
-        {{ message.user }}
+        {{ message.user.name }}
         {{ message.reply }}
         <div class="message-date">
             {{ messageDate }}

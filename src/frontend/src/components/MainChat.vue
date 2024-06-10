@@ -10,6 +10,16 @@ export default {
         ChatHeader,
         ChatContent
     },
+    data() {
+        return {
+            settingsVisible: false
+        }
+    },
+    methods: {
+        showSettings() {
+            this.settingsVisible = true;
+        }
+    },
     setup() {
         const route = useRoute();
         const chatId = ref(route.params.pk);
@@ -36,7 +46,18 @@ export default {
 
 <template>
     <div class="chat">
-        <ChatHeader></ChatHeader>
+        <ChatHeader @click="showSettings()"></ChatHeader>
+        <com-dialog v-model:show="settingsVisible">
+            <h1>{{$store.state.currentChat.title}}</h1>
+            <img>
+            <h2>Информация</h2>
+            <div v-if="chat.chat_type === 'G'">
+                <div v-for="user in chat.current_users" :key="user">
+                    {{ user }}
+                </div>
+            </div>
+                
+        </com-dialog>
         <ChatContent :chat="chat"></ChatContent>
     </div>
 </template>

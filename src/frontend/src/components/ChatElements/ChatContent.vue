@@ -1,8 +1,11 @@
 <script>
 import ChatMessage from "@/components/ChatElements/ChatMessage.vue"
-import { ref, watch} from "vue";
+import { ref, watch } from "vue";
 import {getWebSocketById} from "@/hooks/wsHooks/websockets"
+// import store from "@/store";
+import { useToast } from "vue-toastification";
 import store from "@/store";
+
 export default {
     components: {
         ChatMessage
@@ -15,6 +18,9 @@ export default {
         }
     },
     setup(props) {
+
+        const toast = useToast();
+
         const formData = ref({
             message: ''
         });
@@ -23,23 +29,22 @@ export default {
         let ws = null;
 
         const setWs = () => {
-            const intervalId = setInterval(() => {
             ws = getWebSocketById(props.chat.pk);
-                console.log("WebSocket connection updated");
-            console.log(ws)
+            console.log("WebSocket connection updated");
             if (ws) {
                 messages.value = props.chat.messages;
                 console.log("WebSocket connection established");
-                clearInterval(intervalId);
 
                 ws.onmessage = function(e) {
                     const data = JSON.parse(e.data);
                     if (data.message) {
-                        messages.value.push(data.message)
+                        messages.value.push(data.message);
+                        if (data.message.user.id != store.state.userData.id) {
+                            toast(`Новое сообщение в чате: test`);
+                        }
                     }
+                };
 
-                }
-                    
                 ws.onclose = function(e) {
                     console.log("WebSocket connection closed:", e);
                 };
@@ -47,20 +52,20 @@ export default {
                 ws.onerror = function(e) {
                     console.error("WebSocket error:", e);
                 };
+            } else {
+                setTimeout(setWs, 1000);
             }
-        }, 1000);
         }
 
         watch(() => (props.chat), () => {
             setWs();
-        })
+        });
 
 
         const addMessage = () => {
             ws.send(
                 JSON.stringify({
                     message: formData.value.message,
-                    sender: store.state.userData.id
                 })
             );
             formData.value.message = '';

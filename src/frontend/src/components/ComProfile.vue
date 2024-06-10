@@ -13,6 +13,9 @@ export default {
             userStatus: 'lox',
             userName: "@bibus",
         }
+    },
+    setup() {
+ 
     }
 }
 </script>
