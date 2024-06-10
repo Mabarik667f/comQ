@@ -8,8 +8,7 @@ from users.models import CustomUser
 
 class MessageSerializer(serializers.ModelSerializer):
     created_at_formatted = serializers.SerializerMethodField()
-    user = SlugRelatedField(slug_field='username', queryset=CustomUser.objects.all(),
-                            many=False)
+    user = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -21,14 +20,15 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_created_at_formatted(self, obj: Message):
         return obj.created_at.strftime("%d-%m-%Y %H:%M:%S")
 
+    def get_user(self, obj: Message):
+        from users.serializers import UserDataOnChatSerializer
+        return UserDataOnChatSerializer(obj.user).data
+
 
 class ChatCardSerializer(serializers.ModelSerializer):
     """Отрисовка чатов в sidebar-е"""
     last_message = serializers.SerializerMethodField()
-    current_users = SlugRelatedField(
-        slug_field='username',
-        queryset=CustomUser.objects.all(),
-        many=True)
+    current_users = serializers.SerializerMethodField()
     host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
 
     class Meta:
@@ -38,13 +38,14 @@ class ChatCardSerializer(serializers.ModelSerializer):
     def get_last_message(self, obj: Chat):
         return MessageSerializer(obj.messages.order_by('created_at').last()).data
 
+    def get_current_users(self, obj: Chat):
+        from users.serializers import UserDataOnChatSerializer
+        return UserDataOnChatSerializer(obj.current_users.all(), many=True).data
+
 
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
-    current_users = SlugRelatedField(
-        slug_field='username',
-        queryset=CustomUser.objects.all(),
-        many=True)
+    current_users = serializers.SerializerMethodField()
     host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
 
     class Meta:
@@ -53,6 +54,10 @@ class ChatSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         raise NotImplementedError()
+
+    def get_current_users(self, obj: Chat):
+        from users.serializers import UserDataOnChatSerializer
+        return UserDataOnChatSerializer(obj.current_users.all(), many=True).data
 
 
 class GroupChatSerializer(ChatSerializer):

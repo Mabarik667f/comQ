@@ -15,10 +15,14 @@ from chats.models import Chat
 
 class UserDataOnChatSerializer(serializers.ModelSerializer):
     """Получаем данные о пользователе в рамках чата"""
+    is_online = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'name', 'img', 'status']
+        fields = ['id', 'username', 'name', 'img', 'status', 'is_online']
+
+    def get_is_online(self, obj: CustomUser):
+        return obj.is_online()
 
 
 class UserDataSerializer(serializers.ModelSerializer):
