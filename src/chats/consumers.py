@@ -23,6 +23,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
         await self.send_json(content=data)
 
+
     async def leave_chat(self, chat):
         """Пользователь покидает чат"""
         await self.remove_user_from_chat(chat)
@@ -53,8 +54,23 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         return serializer(pk).data
 
     @database_sync_to_async
-    def current_users(self, chat: Chat):
+    def current_users(self):
+        chat = Chat.objects.get(pk=self.chat_pk)
         return [UserProfileSerializer(user).data for user in chat.current_users.all()]
+
+    async def create_message(self, message):
+        chat: Chat = await self.get_chat()
+        content_type = await database_sync_to_async(MessageContent.objects.get_or_create)(
+            name=MessageContent.TypeOfMessageContent.TEXT
+        )
+        new_message = await database_sync_to_async(Message.objects.create)(
+            chat=chat,
+            user=self.scope['user'],
+            content_type=content_type[0],
+            text_content=message
+        )
+
+        return await self.get_serialized_data(MessageSerializer, new_message)
 
     async def disconnect(self, close_code):
         """Disconect to ws"""
@@ -62,38 +78,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     # Receive message from WebSocket
     async def receive_json(self, content):
-        message = content["message"]
-        sender = content["sender"]
-        chat: Chat = await self.get_chat()
+        new_message = await self.create_message(content['message'])
         # Send message to room group
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.message",
-                              "message": message,
-                              "sender": sender}
+                              "message": new_message}
         )
-        await self.channel_layer.group_send(
-            self.chat_group, {"type": "chat.notify",
-                              "users": await self.current_users(chat)}
-        )
-
-    # Receive message from room group
-    async def chat_notify(self, event):
-        await self.send_json({'users': event['users']})
 
     async def chat_message(self, event):
-        message = event["message"]
-        chat: Chat = await self.get_chat()
-        content_type = await database_sync_to_async(MessageContent.objects.get_or_create)(
-            name=MessageContent.TypeOfMessageContent.TEXT
-        )
-        user = await database_sync_to_async(CustomUser.objects.get)(pk=int(event['sender']))
-        new_message = await database_sync_to_async(Message.objects.create)(
-            chat=chat,
-            user=user,
-            content_type=content_type[0],
-            text_content=message
-        )
-
-        # Send message to WebSocket
-        message_obj = await self.get_serialized_data(MessageSerializer, new_message)
-        await self.send_json({"message": message_obj})
+        await self.send_json({"message": event['message']})
