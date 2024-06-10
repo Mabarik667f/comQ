@@ -62,6 +62,10 @@ class ChatSerializer(serializers.ModelSerializer):
 
 class GroupChatSerializer(ChatSerializer):
     group_settings = serializers.SerializerMethodField()
+    current_users = SlugRelatedField(
+        slug_field='username',
+        queryset=CustomUser.objects.all(),
+        many=True)
 
     class Meta(ChatSerializer.Meta):
         depth = 1
@@ -100,6 +104,10 @@ class GroupChatSerializer(ChatSerializer):
 
 class PrivateChatSerializer(ChatSerializer):
     """Добавить сюда пользователя - собеседника"""
+    current_users = SlugRelatedField(
+        slug_field='username',
+        queryset=CustomUser.objects.all(),
+        many=False)
 
     class Meta(ChatSerializer.Meta):
         depth = 1

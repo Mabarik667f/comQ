@@ -4,7 +4,6 @@ import Cookies from 'js-cookie';
 export default function createPrivateChat() {
     const asyncCall = async (formData) => {
         const currentUsers = [];
-        
         currentUsers.push(formData.username)
          
         try {

@@ -6,7 +6,6 @@ import { ref } from "vue";
  * @returns 
  */
 export default async function getChatCardData(data) {
-
     const chatData = ref({});
     try {
         if (typeof(data) == "string") {

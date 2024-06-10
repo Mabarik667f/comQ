@@ -7,6 +7,7 @@ export default function createGroupChat() {
         for (let user of formData.currentUsers) {
             currentUsers.push(user.value);
         } 
+        console.log(currentUsers)
             
         try {
             await axiosInstance.post("/v1/main/create-group/", {
