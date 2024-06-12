@@ -3,7 +3,7 @@ from channels.db import database_sync_to_async
 
 from users.models import CustomUser
 
-from .models import Chat, Message, MessageContent
+from .models import Chat, Message, MessageContent, UserToChat
 from .serializers import ChatSerializer, MessageSerializer
 from users.serializers import UserProfileSerializer
 
@@ -58,6 +58,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         chat = Chat.objects.get(pk=self.chat_pk)
         return [UserProfileSerializer(user).data for user in chat.current_users.all()]
 
+    @database_sync_to_async
+    def update_notifications(self):
+        user_to_chat = UserToChat.objects.get(chat_id=self.chat_pk, user_id=self.scope['user'])
+        user_to_chat.count_notifications = user_to_chat.count_notifications + 1
+        user_to_chat.save()
+
     async def create_message(self, message):
         chat: Chat = await self.get_chat()
         content_type = await database_sync_to_async(MessageContent.objects.get_or_create)(
@@ -86,4 +92,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def chat_message(self, event):
+        if self.scope['user'].pk != int(event['message']['user']['id']):
+            await self.update_notifications()
         await self.send_json({"message": event['message']})
