@@ -4,6 +4,9 @@ from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
 from .models import *
 
 from users.models import CustomUser
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -29,11 +32,12 @@ class ChatCardSerializer(serializers.ModelSerializer):
     """Отрисовка чатов в sidebar-е"""
     last_message = serializers.SerializerMethodField()
     current_users = serializers.SerializerMethodField()
+    notifications = serializers.SerializerMethodField()
     host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
 
     class Meta:
         model = Chat
-        fields = ('chat_type', 'host', 'current_users', 'last_message', 'pk')
+        fields = ('chat_type', 'host', 'current_users', 'last_message', 'pk', 'notifications')
 
     def get_last_message(self, obj: Chat):
         return MessageSerializer(obj.messages.order_by('created_at').last()).data
@@ -41,6 +45,16 @@ class ChatCardSerializer(serializers.ModelSerializer):
     def get_current_users(self, obj: Chat):
         from users.serializers import UserDataOnChatSerializer
         return UserDataOnChatSerializer(obj.current_users.all(), many=True).data
+
+    def get_notifications(self, obj: Chat):
+        user = self.context.get('user', None)
+        if user is None:
+            return None
+        try:
+            user_to_chat = UserToChat.objects.get(chat_id=obj.pk, user_id=user.pk)
+            return user_to_chat.count_notifications
+        except UserToChat.DoesNotExist:
+            return None
 
 
 class ChatSerializer(serializers.ModelSerializer):
@@ -107,7 +121,7 @@ class PrivateChatSerializer(ChatSerializer):
     current_users = SlugRelatedField(
         slug_field='username',
         queryset=CustomUser.objects.all(),
-        many=False)
+        many=True)
 
     class Meta(ChatSerializer.Meta):
         depth = 1
@@ -119,8 +133,10 @@ class PrivateChatSerializer(ChatSerializer):
         else:
             raise ValueError('error')
 
+
     @staticmethod
     def private_chat(validated_data) -> Chat:
+
         revert_chat = Chat.objects.filter(
             chat_type='P',
             host=validated_data['current_users'][0].pk,
@@ -130,19 +146,20 @@ class PrivateChatSerializer(ChatSerializer):
         cur_chat = Chat.objects.filter(
             chat_type='P',
             host=validated_data['host'].pk,
-            current_users=validated_data['current_users'][0].pk
+            current_users=validated_data['current_users'][0].pk,
         ).exists()
 
         if not revert_chat and not cur_chat:
             chat = Chat.objects.create(chat_type=validated_data['chat_type'], host=validated_data['host'])
             try:
-                chat.add_users(validated_data['current_users'])
-                chat.add_users([validated_data['host']])
+                chat.add_users(users=validated_data['current_users'][0].pk)
+                chat.add_users(users=validated_data['host'].pk)
                 return chat
             except ValueError as error:
-                print("Ошибка добавления пользователей: {}".format(error))
+                print(f"Ошибка добавления пользователей: {error}")
+                raise serializers.ValidationError({"detail": "Ошибка добавления пользователей."})
         else:
-            raise ValueError("error")
+            raise serializers.ValidationError({"detail": "Чат уже существует."})
 
 
 class GroupSettingsSerializer(serializers.ModelSerializer):

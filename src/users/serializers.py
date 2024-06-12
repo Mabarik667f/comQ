@@ -35,7 +35,7 @@ class UserDataSerializer(serializers.ModelSerializer):
 
     def get_chats(self, obj: CustomUser):
         chats = Chat.objects.filter(current_users=obj)
-        return ChatCardSerializer(chats, many=True).data
+        return ChatCardSerializer(chats, many=True, context={'user': obj}).data
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
