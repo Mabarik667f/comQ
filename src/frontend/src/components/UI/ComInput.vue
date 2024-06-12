@@ -5,7 +5,7 @@
     @input="$emit('update:modelValue', $event.target.value)"
     :id="id"
     :placeholder="placeholder"
-    required>
+    >
 </template>
 
 <script>
