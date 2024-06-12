@@ -1,19 +1,34 @@
 <script>
 import ComProfile from '@/components/ComProfile';
+import ChangeProfile from "@/components/ChangeProfile.vue"
 import getProfileData from "@/hooks/getProfileData"
+import { onMounted, ref } from 'vue';
 export default {
   components: {
-    ComProfile
+    ComProfile,
+    ChangeProfile
   },
   setup() {
-    const {userData} = getProfileData();
-    return {userData}
+    const user = ref({});
+    onMounted(async () => {
+      const {userData} = await getProfileData();
+      user.value = userData.value;
+    })
+    return {user}
   }
 }
 </script>
 <template>
-  <div>
-    <ComProfile :user="userData"></ComProfile>
+  <div class="profile">
+    <ComProfile :user="user"></ComProfile>
+    <ChangeProfile></ChangeProfile>
     {{ userData }}
   </div>
 </template>
+
+<style scoped>
+.profile{
+  display: flex;
+  flex-direction: row;
+}
+</style>

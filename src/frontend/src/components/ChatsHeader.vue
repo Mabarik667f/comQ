@@ -83,7 +83,8 @@ export default {
                     <com-input :id="'newPrivateChat'" 
                     class="form-control newPrivate"
                     :placeholder="'@Ivan1234'"
-                    v-model="createPrivateForm.username"></com-input>
+                    v-model="createPrivateForm.username"
+                    required></com-input>
 
                     <label :for="'firstMessage'">Сообщение</label>
                     <com-text :id="'firstMessage'" class="form-control"
@@ -110,7 +111,8 @@ export default {
                     <com-input :id="'newGroupChat'" 
                     class="form-control"
                     :placeholder="'Party'"
-                    v-model="createGroupForm.title"></com-input>       
+                    v-model="createGroupForm.title"
+                    required></com-input>       
 
                     <label class="typo__label">Tagging</label>
                         <multiselect c v-model="createGroupForm.currentUsers"
