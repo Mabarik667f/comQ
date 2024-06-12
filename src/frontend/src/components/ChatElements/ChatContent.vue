@@ -2,9 +2,8 @@
 import ChatMessage from "@/components/ChatElements/ChatMessage.vue"
 import { ref, watch } from "vue";
 import {getWebSocketById} from "@/hooks/wsHooks/websockets"
-// import store from "@/store";
 import { useToast } from "vue-toastification";
-import store from "@/store";
+import { useStore } from "vuex";
 
 export default {
     components: {
@@ -20,6 +19,7 @@ export default {
     setup(props) {
 
         const toast = useToast();
+        const store = useStore();
 
         const formData = ref({
             message: ''
@@ -38,6 +38,7 @@ export default {
                 ws.onmessage = function(e) {
                     const data = JSON.parse(e.data);
                     if (data.message) {
+                        store.commit('updateNotifications', { chatId: props.chat.pk });
                         messages.value.push(data.message);
                         if (data.message.user.id != store.state.userData.id) {
                             toast(`Новое сообщение в чате: test`);

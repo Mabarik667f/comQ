@@ -3,7 +3,7 @@ import ChatsHeader from '@/components/ChatsHeader.vue';
 import ChatCard from '@/components/UI/ChatCard.vue';
 import { mapActions, useStore } from 'vuex';
 import getUserData from '@/hooks/getUserData';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import getChatCardData from '@/hooks/chatHooks/getChatCardData';
 import router from '@/router';
 import { addWebSocket } from '@/hooks/wsHooks/websockets';
@@ -17,10 +17,11 @@ export default {
     },
     
     setup() {
-        const chats = ref([]);
-        const usersChoices = ref([]);
         const store = useStore();
+        const chats = computed(() => store.getters.getChats);
+        const usersChoices = ref([]);
 
+        const chatsList = [];
         onMounted(async () => {
             const {asyncCall} = getUserData();
             const {userData} = await asyncCall();
@@ -31,16 +32,17 @@ export default {
                     usersChoices.value.push({value: addUser.username, name: addUser.name})
                     const {chatData: partnerData} = await getChatCardData(addUser.username);
                     chat.partner = partnerData.value;
-                    chats.value.push(chat);
+                    chatsList.push(chat);
                 } else {
                     const {chatData: groupSettings} = await getChatCardData(chat.pk);
                     chat.groupSettings = groupSettings.value;
-                    chats.value.push(chat);
+                    chatsList.push(chat);
                 }
                 const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`);
                 addWebSocket(chat.pk, ws);
 
             }
+            store.dispatch('initializeChats', {chats: chatsList});
         })
 
         const selectChat = async (chat) => {

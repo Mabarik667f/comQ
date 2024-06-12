@@ -28,6 +28,7 @@ export default {
             <img :src="chatImg" class="short-chat-img">
       </div>
       <div>
+        {{ chat.notifications }}
         {{ chat.partner }}
         {{ chat.groupSettings }}
        

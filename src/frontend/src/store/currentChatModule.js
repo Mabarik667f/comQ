@@ -30,6 +30,6 @@ export const currentChatModule = {
         clear() {
             Cookies.remove('title');
             Cookies.remove('imagePath');
-        }
+        },
     }
 }
