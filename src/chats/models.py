@@ -27,7 +27,7 @@ class Chat(models.Model):
 
     chat_type = models.CharField(max_length=1, choices=TypesOfChats)
     host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chats')
-    current_users = models.ManyToManyField(settings.AUTH_USER_MODEL,
+    current_users = models.ManyToManyField(settings.AUTH_USER_MODEL, through='UserToChat',
                                            related_name='current_chats', blank=True)
 
     objects = models.Manager()
@@ -37,8 +37,9 @@ class Chat(models.Model):
 
     @transaction.atomic
     def add_users(self, users, group_settings=None):
-        if self.chat_type == self.TypesOfChats.PRIVATE and len(users) == 1:
-            user = users[0]
+
+        if self.chat_type == self.TypesOfChats.PRIVATE and isinstance(users, int):
+            user = users
             self.current_users.add(user)
         elif self.chat_type == self.TypesOfChats.GROUP and group_settings:
             for user in users:
@@ -58,6 +59,19 @@ class Chat(models.Model):
             group_settings.delete_user_from_group(user)
         else:
             raise ValueError('private chat not support this method!')
+
+
+class UserToChat(models.Model):
+
+    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_to_chat')
+    chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE, related_name='user_to_chat')
+    count_notifications = models.IntegerField(default=0)
+
+    objects = models.Manager()
+
+    def clear_notifications(self):
+        """Пользователь открыл чат - уведомления пропали"""
+        self.count_notifications = 0
 
 
 class MessageContent(models.Model):
@@ -80,8 +94,11 @@ class Message(models.Model):
     chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE, related_name='messages')
     user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='messages')
     content_type = models.ForeignKey(to=MessageContent, on_delete=models.PROTECT)
+
     created_at = models.DateTimeField(auto_now_add=True)
     reply = models.BooleanField(default=False)
+    # is_read = models.BooleanField(default=False)
+
     text_content = models.TextField()
     audio_content = models.FileField(upload_to=message_file_content_upload_path)
     video_content = models.FileField(upload_to=message_file_content_upload_path)

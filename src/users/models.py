@@ -5,8 +5,6 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from chats.models import Chat
-
 
 def user_avatar_upload_path(instance, filename):
     ext = filename.split('.')[-1]
