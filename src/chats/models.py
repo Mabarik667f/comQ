@@ -11,8 +11,15 @@ def group_avatar_upload_path(instance, filename):
     timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
     new_filename = f"{timestamp}.{ext}"
     folder = f'chat_avatars/chat_{instance.id}'
-    if not os.path.exists(folder):
-        os.mkdir(folder)
+    path = os.path.join(settings.MEDIA_ROOT, folder)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    else:
+        for filename in os.listdir(path):
+            file_path = os.path.join(path, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
     return os.path.join(folder, new_filename)
 
 
@@ -45,7 +52,7 @@ class Chat(models.Model):
             for user in users:
                 self.current_users.add(user)
                 if user == self.host:
-                    group_settings.add_user_to_group(user, role='owner')
+                    group_settings.add_user_to_group(user, role='O')
                 else:
                     group_settings.add_user_to_group(user)
         else:
@@ -124,7 +131,7 @@ class GroupSettings(models.Model):
         return f"Chat: {self.chat}, Title: {self.title}, Users: {self.users.all()}"
 
     @transaction.atomic
-    def add_user_to_group(self, user, role='default'):
+    def add_user_to_group(self, user, role='D'):
         if not GroupSettingsHasUser.objects.filter(group_settings=self, user=user).exists():
             GroupSettingsHasUser.objects.create(group_settings=self, user=user, role=role)
         else:
@@ -161,11 +168,17 @@ class GroupSettingsHasUser(models.Model):
     def __str__(self):
         return f"User: {self.user} Role: {self.role} Group_chat: {self.group_settings}"
 
-    def change_role(self, user, role):
-        if role == 'owner':
-            raise ValueError('нельзя присвоить роль создателя')
+    def change_role(self, admin, role):
+        admin_obj = GroupSettingsHasUser.objects.get(user=admin,
+                                                     group_settings=self.group_settings)
+
+        if admin_obj.role in (self.Role.ADMIN, self.Role.OWNER):
+            if role == self.Role.OWNER:
+                raise ValueError('нельзя присвоить роль создателя')
+            else:
+                self.role = role
         else:
-            self.role = role
+            raise ValueError('вы не являетесь админом!')
 
     def delete_user(self):
         self.delete()

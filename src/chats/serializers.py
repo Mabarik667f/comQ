@@ -115,6 +115,18 @@ class GroupChatSerializer(ChatSerializer):
             print("Ошибка добавления пользователей: {}".format(error))
         return group
 
+    def add_user(self):
+        pass
+
+    def delete_user(self):
+        pass
+
+    def change_role(self):
+        pass
+
+    def delete_group(self):
+        pass
+
 
 class PrivateChatSerializer(ChatSerializer):
     """Добавить сюда пользователя - собеседника"""
@@ -132,7 +144,6 @@ class PrivateChatSerializer(ChatSerializer):
             return self.private_chat(validated_data)
         else:
             raise ValueError('error')
-
 
     @staticmethod
     def private_chat(validated_data) -> Chat:
@@ -169,3 +180,42 @@ class GroupSettingsSerializer(serializers.ModelSerializer):
         model = GroupSettings
         fields = '__all__'
 
+    def update(self, instance, validated_data):
+        """Изменяем данные группы - аватат, название"""
+        if 'avatar' in validated_data and instance.avatar != 'chat_avatars/default.jpg':
+            instance.avatar.delete()
+
+        instance.avatar = validated_data.get('avatar', instance.avatar)
+        instance.title = validated_data.get('title', instance.title)
+        instance.save()
+
+        return instance
+
+
+class GroupSettingsHasUserSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    group_settings = serializers.PrimaryKeyRelatedField(queryset=GroupSettings.objects.all())
+
+    class Meta:
+        model = GroupSettingsHasUser
+        fields = "__all__"
+
+    def update(self, instance: GroupSettingsHasUser, validated_data):
+
+        if validated_data.get('user', None) is None or validated_data.get('group_settings', None) is None:
+            raise serializers.ValidationError('Нет значений пользователя и чата')
+        if not isinstance(validated_data.get('user'), CustomUser) or \
+                not isinstance(validated_data.get('group_settings'), GroupSettings):
+            raise serializers.ValidationError('Не верный тип данных')
+
+        user = self.context['user']
+
+        group_settings_has_user = GroupSettingsHasUser.objects.get(user=user.pk,
+                                                                   group_settings=validated_data['group_settings'].pk)
+        if group_settings_has_user:
+            instance.change_role(user, validated_data['role'])
+        else:
+            raise serializers.ValidationError('Вы не состоите в группе!')
+
+        instance.save()
+        return instance
