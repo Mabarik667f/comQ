@@ -22,12 +22,67 @@ class ChatRetrieveView(generics.RetrieveAPIView):
     lookup_field = 'pk'
 
 
-class GroupChatRetrieveView(generics.RetrieveAPIView):
+class GroupChatRetrieveDestroyView(generics.RetrieveDestroyAPIView):
     """Получаем данные о группе для отрисовки на интерфейсе"""
     queryset = Chat.objects.filter(chat_type="G")
     authentication_classes = [JWTAuthentication]
     serializer_class = GroupChatSerializer
     lookup_field = 'pk'
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer: GroupChatSerializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.delete_group()
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
+
+
+class GroupChatUsersView(generics.GenericAPIView,
+                         mixins.CreateModelMixin,
+                         mixins.UpdateModelMixin,
+                         mixins.DestroyModelMixin):
+
+    queryset = Chat.objects.filter(chat_type="G")
+    authentication_classes = [JWTAuthentication]
+    serializer_class = GroupChatSerializer
+    lookup_field = 'pk'
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer: GroupChatSerializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        service_obj = GroupChatService(request.user, instance)
+        service_obj.add_user(serializer.validated_data)
+
+        return Response(status=status.HTTP_201_CREATED, data=serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer: GroupChatSerializer = self.get_serializer(instance, data=request.data, patrial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.leave_user()
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer: GroupChatSerializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        service_obj = GroupChatService(request.user, instance)
+        service_obj.delete_user(serializer.validated_data)
+
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
 
 
 class GroupSettingsRetrieveUpdateView(generics.RetrieveUpdateAPIView):
@@ -39,10 +94,15 @@ class GroupSettingsRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     lookup_field = 'pk'
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
+
     def patch(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            serializer = GroupSettingsSerializer(instance=instance, data=request.data, partial=True)
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -55,7 +115,6 @@ class GroupSettingsHasUserView(generics.UpdateAPIView):
     authentication_classes = [JWTAuthentication]
     queryset = GroupSettingsHasUser.objects.all()
     serializer_class = GroupSettingsHasUserSerializer
-
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

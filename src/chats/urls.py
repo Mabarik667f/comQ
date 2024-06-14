@@ -3,7 +3,8 @@ from .views import *
 
 urlpatterns = [
     path('chat-detail/<int:pk>/', ChatRetrieveView.as_view(), name='chat-detail'),
-    path('group-chat-detail/<int:pk>/', GroupChatRetrieveView.as_view(), name="group-chat-detail"),
+    path('group-chat-detail/<int:pk>/', GroupChatRetrieveDestroyView.as_view(), name="group-chat-detail"),
+    path('group-chat-users/<int:pk>/', GroupChatUsersView.as_view(), name='group-chat-users'),
 
     path('group-settings/<int:pk>/', GroupSettingsRetrieveUpdateView.as_view(), name='group-settings'),
 

@@ -1,6 +1,7 @@
 from io import BytesIO
 
 from PIL import Image
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from django.urls import reverse
@@ -60,26 +61,68 @@ class CreateChatTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
-# class GroupUsersChangeTests(APITestCase):
-#     """тестируем функционал групповых чатов"""
-#     def setUp(self):
-#         self.user, self.client = create_users()
-#         self.client.force_authenticate(user=self.user)
+class GroupUsersChangeTests(APITestCase):
+    """тестируем функционал групповых чатов"""
+    def setUp(self):
+        self.user, self.client = create_users()
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create-group')
+        data = {'current_users': ['test1', 'test2'],
+                'chat_type': 'G',
+                'host': 0,
+                'title': 'test'}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.newUser = CustomUser.objects.create_user(
+            id=3,
+            username='test3',
+            email='testuser1gg@example.my',
+            password='testpass123'
+        )
+
+    def test_add_user(self):
+        """Добавление пользователя"""
+        url = reverse('group-chat-users', kwargs={'pk': Chat.objects.last().pk})
+        data = {'current_users': [self.newUser.username]}
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data.get('current_users')[-1], 'test3')
+        try:
+            GroupSettingsHasUser.objects.get(group_settings=GroupSettings.objects.last().pk, user=self.newUser)
+        except ObjectDoesNotExist:
+            self.fail("Настройки не создались !")
+
+    def test_delete_user(self):
+        """удаление пользователя"""
+        url = reverse('group-chat-users', kwargs={'pk': Chat.objects.last().pk})
+        data = {'current_users': ['test2']}
+        response = self.client.delete(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('current_users')[-1], 'test1')
+
+        with self.assertRaises(ObjectDoesNotExist):
+            GroupSettingsHasUser.objects.get(group_settings=1, user=CustomUser.objects.get(username='test2'))
+
+    def test_delete_owner(self):
+        """попытка удалить владельца"""
+        url = reverse('group-chat-users', kwargs={'pk': Chat.objects.last().pk})
+        data = {'current_users': ['testuser']}
+        with self.assertRaises(ValueError) as context_manager:
+            response = self.client.delete(url, data, format='json')
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertIn('Вы не можете удалить владельца чата', str(context_manager.exception))
 #
-#     def test_add_user(self):
-#         pass
-#
-#     def test_delete_user(self):
-#         pass
-#
-#     def test_change_role_user(self):
-#         pass
-#
-#     def test_delete_group(self):
-#         pass
+    # def test_delete_group(self):
+    #     pass
+    #
+    # def test_leave_to_room(self):
+    #     pass
+
 
 class GroupSettingsChange(APITestCase):
-
+    """Тесты по изменению данных группы"""
     def setUp(self):
         self.user, self.client = create_users()
         self.client.force_authenticate(user=self.user)
@@ -101,12 +144,14 @@ class GroupSettingsChange(APITestCase):
         self.image_data.seek(0)
 
     def test_retrieve(self):
+        """Отображение"""
         url = reverse('group-settings', kwargs={'pk': self.pk})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_change_title(self):
+        """Изменение названия"""
         url = reverse('group-settings', kwargs={'pk': self.pk})
         data = {'title': 'newTitle'}
         response = self.client.patch(url, data, format='json')
@@ -116,6 +161,7 @@ class GroupSettingsChange(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_change_avatar(self):
+        """Изменение аватара"""
         url = reverse('group-settings', kwargs={'pk': self.pk})
         data = {'avatar': SimpleUploadedFile('avatar.png', self.image_data.read(), content_type='image/png')}
         response = self.client.patch(url, data, format='multipart')
@@ -125,6 +171,7 @@ class GroupSettingsChange(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_change_group_data(self):
+        """Изменение всех данных"""
         url = reverse('group-settings', kwargs={'pk': self.pk})
         data = {'avatar': SimpleUploadedFile('avatar.png', self.image_data.read(), content_type='image/png'),
                 'title': 'newTitle'}
@@ -137,6 +184,7 @@ class GroupSettingsChange(APITestCase):
 
 
 class GroupSettingsHasUserTests(APITestCase):
+    """Тестируем смену ролей"""
     def setUp(self):
         self.user, self.client = create_users()
         self.client.force_authenticate(user=self.user)
@@ -151,6 +199,7 @@ class GroupSettingsHasUserTests(APITestCase):
         self.other_user = CustomUser.objects.get(pk=1)
 
     def test_change_role_to_admin(self):
+        """смена роли на админа"""
         url = reverse('group-settings-has-user')
         data = {'group_settings': self.group_settings.pk,
                 "user": self.other_user.pk,
@@ -161,6 +210,7 @@ class GroupSettingsHasUserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_change_role_to_owner(self):
+        """смена роли на владельца"""
         url = reverse('group-settings-has-user')
         data = {'group_settings': self.group_settings.pk,
                 "user": self.user.pk,
@@ -171,6 +221,7 @@ class GroupSettingsHasUserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_change_role_to_default(self):
+        """смена роли к обычной"""
         url = reverse('group-settings-has-user')
         data = {'group_settings': self.group_settings.pk,
                 "user": self.user.pk,
@@ -181,6 +232,7 @@ class GroupSettingsHasUserTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_change_role_to_admin_error(self):
+        """попытке присвоения роли админа без нужных прав"""
         self.client.force_authenticate(user=self.other_user)
         url = reverse('group-settings-has-user')
         data = {'group_settings': self.group_settings.pk,
