@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
 
 from .models import *
@@ -6,7 +7,11 @@ from .models import *
 from users.models import CustomUser
 import logging
 
+from .services import GroupChatService, PrivateChatService
+
 logger = logging.getLogger(__name__)
+
+"""Вынос логики во views и services"""
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -60,7 +65,7 @@ class ChatCardSerializer(serializers.ModelSerializer):
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
     current_users = serializers.SerializerMethodField()
-    host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
 
     class Meta:
         model = Chat
@@ -75,6 +80,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
 
 class GroupChatSerializer(ChatSerializer):
+
     group_settings = serializers.SerializerMethodField()
     current_users = SlugRelatedField(
         slug_field='username',
@@ -84,6 +90,9 @@ class GroupChatSerializer(ChatSerializer):
     class Meta(ChatSerializer.Meta):
         depth = 1
         fields = ChatSerializer.Meta.fields + ('group_settings',)
+        extra_kwargs = {
+            'chat_type': {'required': False},
+        }
 
     def create(self, validated_data):
         return self.group_chat(validated_data)
@@ -115,18 +124,6 @@ class GroupChatSerializer(ChatSerializer):
             print("Ошибка добавления пользователей: {}".format(error))
         return group
 
-    def add_user(self):
-        pass
-
-    def delete_user(self):
-        pass
-
-    def change_role(self):
-        pass
-
-    def delete_group(self):
-        pass
-
 
 class PrivateChatSerializer(ChatSerializer):
     """Добавить сюда пользователя - собеседника"""
@@ -141,36 +138,9 @@ class PrivateChatSerializer(ChatSerializer):
 
     def create(self, validated_data):
         if len(validated_data['current_users']) == 1:
-            return self.private_chat(validated_data)
+            return PrivateChatService.create_private_chat(validated_data)
         else:
             raise ValueError('error')
-
-    @staticmethod
-    def private_chat(validated_data) -> Chat:
-
-        revert_chat = Chat.objects.filter(
-            chat_type='P',
-            host=validated_data['current_users'][0].pk,
-            current_users=validated_data['host'].pk
-        ).exists()
-
-        cur_chat = Chat.objects.filter(
-            chat_type='P',
-            host=validated_data['host'].pk,
-            current_users=validated_data['current_users'][0].pk,
-        ).exists()
-
-        if not revert_chat and not cur_chat:
-            chat = Chat.objects.create(chat_type=validated_data['chat_type'], host=validated_data['host'])
-            try:
-                chat.add_users(users=validated_data['current_users'][0].pk)
-                chat.add_users(users=validated_data['host'].pk)
-                return chat
-            except ValueError as error:
-                print(f"Ошибка добавления пользователей: {error}")
-                raise serializers.ValidationError({"detail": "Ошибка добавления пользователей."})
-        else:
-            raise serializers.ValidationError({"detail": "Чат уже существует."})
 
 
 class GroupSettingsSerializer(serializers.ModelSerializer):
@@ -185,8 +155,13 @@ class GroupSettingsSerializer(serializers.ModelSerializer):
         if 'avatar' in validated_data and instance.avatar != 'chat_avatars/default.jpg':
             instance.avatar.delete()
 
-        instance.avatar = validated_data.get('avatar', instance.avatar)
-        instance.title = validated_data.get('title', instance.title)
+        user = self.context['user']
+        group_settings_has_user = get_object_or_404(GroupSettingsHasUser, group_settings=instance.pk, user=user.pk)
+        if group_settings_has_user.get_role_display() in ('admin', 'owner'):
+
+            instance.avatar = validated_data.get('avatar', instance.avatar)
+            instance.title = validated_data.get('title', instance.title)
+
         instance.save()
 
         return instance
@@ -209,9 +184,9 @@ class GroupSettingsHasUserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Не верный тип данных')
 
         user = self.context['user']
-
-        group_settings_has_user = GroupSettingsHasUser.objects.get(user=user.pk,
-                                                                   group_settings=validated_data['group_settings'].pk)
+        group_settings_has_user = get_object_or_404(GroupSettingsHasUser,
+                                                    group_settings=validated_data['group_settings'].pk,
+                                                    user=user.pk)
         if group_settings_has_user:
             instance.change_role(user, validated_data['role'])
         else:

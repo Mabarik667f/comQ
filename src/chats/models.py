@@ -44,7 +44,7 @@ class Chat(models.Model):
 
     @transaction.atomic
     def add_users(self, users, group_settings=None):
-
+        """Возможная переработка"""
         if self.chat_type == self.TypesOfChats.PRIVATE and isinstance(users, int):
             user = users
             self.current_users.add(user)
@@ -61,8 +61,9 @@ class Chat(models.Model):
     @transaction.atomic
     def delete_user(self, user):
         if self.chat_type == 'G':
-            self.current_users.delete(user)
-            group_settings: GroupSettings = GroupSettings.objects.filter(chat=self)
+            del_user = UserToChat.objects.get(user=user, chat=self)
+            del_user.delete()
+            group_settings: GroupSettings = GroupSettings.objects.get(chat=self)
             group_settings.delete_user_from_group(user)
         else:
             raise ValueError('private chat not support this method!')
@@ -139,11 +140,13 @@ class GroupSettings(models.Model):
 
     @transaction.atomic
     def delete_user_from_group(self, user):
-        group_settings_has_user: GroupSettingsHasUser = GroupSettingsHasUser.objects.filter(group_settings=self, user=user).exists()
-        if not group_settings_has_user:
+
+        try:
+            group_settings_has_user = GroupSettingsHasUser.objects.get(group_settings=self, user=user)
+        except GroupSettingsHasUser.DoesNotExist:
             raise ValueError('Пользователь не состоит в группе')
-        else:
-            group_settings_has_user.delete_user()
+
+        group_settings_has_user.delete()
 
     @transaction.atomic
     def delete_group(self):
@@ -179,9 +182,6 @@ class GroupSettingsHasUser(models.Model):
                 self.role = role
         else:
             raise ValueError('вы не являетесь админом!')
-
-    def delete_user(self):
-        self.delete()
 
 
 
