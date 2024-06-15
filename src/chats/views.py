@@ -14,6 +14,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class MessageDestroyUpdateView(generics.GenericAPIView,
+                               mixins.UpdateModelMixin,
+                               mixins.DestroyModelMixin):
+
+    authentication_classes = [JWTAuthentication]
+    serializer_class = MessageSerializer
+    queryset = Message.objects.all()
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer: MessageSerializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        service_obj = MessageService()
+        service_obj.delete_message(instance=instance)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer: MessageSerializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
+
+
 class ChatRetrieveView(generics.RetrieveAPIView):
     """Получаем данные о чате для отрисовки на интерфейсе"""
     queryset = Chat.objects.all()

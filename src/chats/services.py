@@ -5,7 +5,7 @@ import logging
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
 
-from .models import GroupSettings, Chat, GroupSettingsHasUser
+from .models import GroupSettings, Chat, GroupSettingsHasUser, Message
 from users.models import CustomUser
 
 logger = logging.getLogger(__name__)
@@ -134,8 +134,6 @@ class GroupSettingsService:
 
     def update_group_settings(self, validated_data, instance):
         """Изменяем данные группы - аватар, название"""
-        if 'avatar' in validated_data and instance.avatar != 'chat_avatars/default.jpg':
-            instance.avatar.delete()
 
         group_settings_has_user = get_object_or_404(GroupSettingsHasUser, group_settings=instance.pk, user=self.user.pk)
         if group_settings_has_user.get_role_display() in ('admin', 'owner'):
@@ -162,3 +160,14 @@ class GroupSettingsHasUserService:
             instance.change_role(self.user, validated_data['role'])
         else:
             raise serializers.ValidationError('Вы не состоите в группе!')
+
+
+class MessageService:
+
+    @staticmethod
+    def delete_message(instance):
+        instance.delete()
+
+    @staticmethod
+    def edit_message(validated_data, instance: Message):
+        instance.text_content = validated_data.get('text_content', instance.text_content)

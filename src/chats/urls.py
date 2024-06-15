@@ -10,6 +10,8 @@ urlpatterns = [
 
     path('group-settings-has-user/', GroupSettingsHasUserView.as_view(), name='group-settings-has-user'),
 
+    path('message/<int:pk>/', MessageDestroyUpdateView.as_view(), name='message'),
+
     path('create-group/', CreateGroupChatView.as_view(), name='create-group'),
     path('create-private/', CreatePrivateChatView.as_view(), name='create-private'),
 

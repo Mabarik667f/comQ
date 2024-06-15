@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from users.models import CustomUser
 from django.core.files.uploadedfile import SimpleUploadedFile
-from .models import GroupSettings, Chat, GroupSettingsHasUser
+from .models import GroupSettings, Chat, GroupSettingsHasUser, Message, MessageContent
 
 
 def create_users():
@@ -253,3 +253,43 @@ class GroupSettingsHasUserTests(APITestCase):
                 "role": "A"}
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class MessageTests(APITestCase):
+
+    def setUp(self):
+        self.user, self.client = create_users()
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create-group')
+        data = {'current_users': ['test1', 'test2'],
+                'chat_type': 'G',
+                'host': 0,
+                'title': 'test'}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.obj = Chat.objects.last()
+        content_type = MessageContent.objects.get_or_create(
+                        name=MessageContent.TypeOfMessageContent.TEXT)
+        self.message = Message.objects.create(chat=self.obj,
+                                              user=self.user,
+                                              content_type=content_type[0],
+                                              text_content='testContent')
+
+    def test_edit_message(self):
+        url = reverse('message', kwargs={"pk": self.message.pk})
+        data = {"text_content": "editContent",
+                "chat": self.obj.pk}
+        response = self.client.patch(url, data, format="json")
+        obj = Message.objects.get(pk=self.message.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(obj.text_content, "editContent")
+
+    def test_delete_message(self):
+        url = reverse('message', kwargs={"pk": self.message.pk})
+        data = {"chat": self.obj.pk}
+        response = self.client.delete(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(Message.objects.all()), 0)

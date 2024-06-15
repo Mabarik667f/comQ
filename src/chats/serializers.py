@@ -7,7 +7,8 @@ from .models import *
 from users.models import CustomUser
 import logging
 
-from .services import GroupChatService, PrivateChatService, GroupSettingsService, GroupSettingsHasUserService
+from .services import GroupChatService, PrivateChatService, GroupSettingsService, GroupSettingsHasUserService, \
+    MessageService
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,15 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = '__all__'
+        extra_kwargs = {
+            'audio_content': {'required': False},
+            'video_content': {'required': False},
+            'file_content': {'required': False},
+            'img_content': {'required': False},
+            "text_content": {"required": False},
+            "content_type": {"default": "T"}
+        }
+
 
     def create(self, validated_data):
         return Message.objects.create(**validated_data)
@@ -31,6 +41,12 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_user(self, obj: Message):
         from users.serializers import UserDataOnChatSerializer
         return UserDataOnChatSerializer(obj.user).data
+
+    def update(self, instance, validated_data):
+        service_obj = MessageService()
+        service_obj.edit_message(validated_data, instance)
+        instance.save()
+        return instance
 
 
 class ChatCardSerializer(serializers.ModelSerializer):
