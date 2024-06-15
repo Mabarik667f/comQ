@@ -7,7 +7,7 @@ from .models import *
 from users.models import CustomUser
 import logging
 
-from .services import GroupChatService, PrivateChatService
+from .services import GroupChatService, PrivateChatService, GroupSettingsService, GroupSettingsHasUserService
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,8 @@ class GroupChatSerializer(ChatSerializer):
     current_users = SlugRelatedField(
         slug_field='username',
         queryset=CustomUser.objects.all(),
-        many=True)
+        many=True,
+        required=False)
 
     class Meta(ChatSerializer.Meta):
         depth = 1
@@ -95,34 +96,14 @@ class GroupChatSerializer(ChatSerializer):
         }
 
     def create(self, validated_data):
-        return self.group_chat(validated_data)
+        service_obj = GroupChatService(user=self.context['user'], chat=None)
+        title = self.context.get('title', None)
+        return service_obj.create_group_chat(validated_data, title)
 
     def get_group_settings(self, obj: Chat):
-
-        group_settings = self.get_or_create_group_settings(chat=obj)
+        service_obj = GroupChatService(user=self.context['user'], chat=None)
+        group_settings = service_obj.get_or_create_group_settings(chat=obj)
         return GroupSettingsSerializer(group_settings).data
-
-    def get_or_create_group_settings(self, chat):
-        title = self.context.get('title', None)
-        if title:
-            group_settings = GroupSettings.objects.get_or_create(chat=chat, title=title)[0]
-        else:
-            group_settings = GroupSettings.objects.get(chat=chat)
-
-        return group_settings
-
-    def group_chat(self, validated_data) -> Chat:
-        group = Chat.objects.create(chat_type=validated_data['chat_type'],
-                                    host=validated_data['host'])
-        try:
-            users = validated_data['current_users']
-            users.append(validated_data['host'])
-            group.add_users(users=validated_data['current_users'],
-                            group_settings=self.get_or_create_group_settings(chat=group))
-            return group
-        except ValueError as error:
-            print("Ошибка добавления пользователей: {}".format(error))
-        return group
 
 
 class PrivateChatSerializer(ChatSerializer):
@@ -150,20 +131,10 @@ class GroupSettingsSerializer(serializers.ModelSerializer):
         model = GroupSettings
         fields = '__all__'
 
-    def update(self, instance, validated_data):
-        """Изменяем данные группы - аватат, название"""
-        if 'avatar' in validated_data and instance.avatar != 'chat_avatars/default.jpg':
-            instance.avatar.delete()
-
-        user = self.context['user']
-        group_settings_has_user = get_object_or_404(GroupSettingsHasUser, group_settings=instance.pk, user=user.pk)
-        if group_settings_has_user.get_role_display() in ('admin', 'owner'):
-
-            instance.avatar = validated_data.get('avatar', instance.avatar)
-            instance.title = validated_data.get('title', instance.title)
-
+    def update(self, instance: GroupSettings, validated_data):
+        service_obj = GroupSettingsService(user=self.context.get('user'))
+        service_obj.update_group_settings(validated_data, instance)
         instance.save()
-
         return instance
 
 
@@ -177,20 +148,7 @@ class GroupSettingsHasUserSerializer(serializers.ModelSerializer):
 
     def update(self, instance: GroupSettingsHasUser, validated_data):
 
-        if validated_data.get('user', None) is None or validated_data.get('group_settings', None) is None:
-            raise serializers.ValidationError('Нет значений пользователя и чата')
-        if not isinstance(validated_data.get('user'), CustomUser) or \
-                not isinstance(validated_data.get('group_settings'), GroupSettings):
-            raise serializers.ValidationError('Не верный тип данных')
-
-        user = self.context['user']
-        group_settings_has_user = get_object_or_404(GroupSettingsHasUser,
-                                                    group_settings=validated_data['group_settings'].pk,
-                                                    user=user.pk)
-        if group_settings_has_user:
-            instance.change_role(user, validated_data['role'])
-        else:
-            raise serializers.ValidationError('Вы не состоите в группе!')
-
+        service_obj = GroupSettingsHasUserService(user=self.context.get('user'))
+        service_obj.update_user_role(validated_data, instance)
         instance.save()
         return instance

@@ -148,10 +148,6 @@ class GroupSettings(models.Model):
 
         group_settings_has_user.delete()
 
-    @transaction.atomic
-    def delete_group(self):
-        self.delete()
-
 
 class GroupSettingsHasUser(models.Model):
 

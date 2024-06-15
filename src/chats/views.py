@@ -34,13 +34,6 @@ class GroupChatRetrieveDestroyView(generics.RetrieveDestroyAPIView):
         context['user'] = self.request.user
         return context
 
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer: GroupChatSerializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.delete_group()
-        return Response(status=status.HTTP_200_OK, data=serializer.data)
-
 
 class GroupChatUsersView(generics.GenericAPIView,
                          mixins.CreateModelMixin,
@@ -68,10 +61,13 @@ class GroupChatUsersView(generics.GenericAPIView,
         return Response(status=status.HTTP_201_CREATED, data=serializer.data)
 
     def patch(self, request, *args, **kwargs):
+
         instance = self.get_object()
-        serializer: GroupChatSerializer = self.get_serializer(instance, data=request.data, patrial=True)
+        serializer: GroupChatSerializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.leave_user()
+
+        service_obj = GroupChatService(request.user, instance)
+        service_obj.leave_user()
         return Response(status=status.HTTP_200_OK, data=serializer.data)
 
     def delete(self, request, *args, **kwargs):
@@ -164,7 +160,8 @@ class CreateGroupChatView(APIView):
     authentication_classes = [JWTAuthentication]
 
     def post(self, request, *args, **kwargs):
-        serializer = GroupChatSerializer(data=request.data, context={'title': request.data['title']})
+        serializer = GroupChatSerializer(data=request.data, context={'title': request.data['title'],
+                                                                     'user': request.user})
         try:
             serializer.is_valid(raise_exception=True)
             serializer.save()

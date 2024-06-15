@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def check_to_admin(func):
+    """Проверка на админа"""
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         group_settings = self.get_group_settings()
@@ -28,6 +29,7 @@ def check_to_admin(func):
 
 
 def check_to_owner(func):
+    """Проверка на владельца"""
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         group_settings = self.get_group_settings()
@@ -65,12 +67,33 @@ class GroupChatService:
         else:
             self.chat.delete_user(del_user)
 
-    def leave_user(self, validated_data):
-        pass
+    def leave_user(self):
+        self.chat.delete_user(self.user)
 
     @check_to_owner
-    def delete_group(self, validated_data):
-        pass
+    def delete_group(self):
+        self.chat.delete()
+
+    @staticmethod
+    def get_or_create_group_settings(chat, title=None):
+        if title:
+            group_settings = GroupSettings.objects.get_or_create(chat=chat, title=title)[0]
+        else:
+            group_settings = GroupSettings.objects.get(chat=chat)
+        return group_settings
+
+    def create_group_chat(self, validated_data, title) -> Chat:
+        group = Chat.objects.create(chat_type=validated_data['chat_type'],
+                                    host=validated_data['host'])
+        try:
+            users = validated_data['current_users']
+            users.append(validated_data['host'])
+            group.add_users(users=validated_data['current_users'],
+                            group_settings=self.get_or_create_group_settings(chat=group, title=title))
+            return group
+        except ValueError as error:
+            print("Ошибка добавления пользователей: {}".format(error))
+        return group
 
 
 class PrivateChatService:
@@ -105,4 +128,37 @@ class PrivateChatService:
 
 
 class GroupSettingsService:
-    pass
+
+    def __init__(self, user):
+        self.user = user
+
+    def update_group_settings(self, validated_data, instance):
+        """Изменяем данные группы - аватар, название"""
+        if 'avatar' in validated_data and instance.avatar != 'chat_avatars/default.jpg':
+            instance.avatar.delete()
+
+        group_settings_has_user = get_object_or_404(GroupSettingsHasUser, group_settings=instance.pk, user=self.user.pk)
+        if group_settings_has_user.get_role_display() in ('admin', 'owner'):
+            instance.avatar = validated_data.get('avatar', instance.avatar)
+            instance.title = validated_data.get('title', instance.title)
+
+
+class GroupSettingsHasUserService:
+
+    def __init__(self, user):
+        self.user = user
+
+    def update_user_role(self, validated_data, instance):
+        if validated_data.get('user', None) is None or validated_data.get('group_settings', None) is None:
+            raise serializers.ValidationError('Нет значений пользователя и чата')
+        if not isinstance(validated_data.get('user'), CustomUser) or \
+                not isinstance(validated_data.get('group_settings'), GroupSettings):
+            raise serializers.ValidationError('Не верный тип данных')
+
+        group_settings_has_user = get_object_or_404(GroupSettingsHasUser,
+                                                    group_settings=validated_data['group_settings'].pk,
+                                                    user=self.user.pk)
+        if group_settings_has_user:
+            instance.change_role(self.user, validated_data['role'])
+        else:
+            raise serializers.ValidationError('Вы не состоите в группе!')

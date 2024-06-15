@@ -79,10 +79,11 @@ class GroupUsersChangeTests(APITestCase):
             email='testuser1gg@example.my',
             password='testpass123'
         )
+        self.chat = Chat.objects.last().pk
 
     def test_add_user(self):
         """Добавление пользователя"""
-        url = reverse('group-chat-users', kwargs={'pk': Chat.objects.last().pk})
+        url = reverse('group-chat-users', kwargs={'pk': self.chat})
         data = {'current_users': [self.newUser.username]}
         response = self.client.post(url, data, format='json')
 
@@ -95,7 +96,7 @@ class GroupUsersChangeTests(APITestCase):
 
     def test_delete_user(self):
         """удаление пользователя"""
-        url = reverse('group-chat-users', kwargs={'pk': Chat.objects.last().pk})
+        url = reverse('group-chat-users', kwargs={'pk': self.chat})
         data = {'current_users': ['test2']}
         response = self.client.delete(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -106,19 +107,31 @@ class GroupUsersChangeTests(APITestCase):
 
     def test_delete_owner(self):
         """попытка удалить владельца"""
-        url = reverse('group-chat-users', kwargs={'pk': Chat.objects.last().pk})
+        url = reverse('group-chat-users', kwargs={'pk': self.chat})
         data = {'current_users': ['testuser']}
         with self.assertRaises(ValueError) as context_manager:
             response = self.client.delete(url, data, format='json')
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertIn('Вы не можете удалить владельца чата', str(context_manager.exception))
-#
-    # def test_delete_group(self):
-    #     pass
-    #
-    # def test_leave_to_room(self):
-    #     pass
+
+    def test_leave_to_room(self):
+        """Пльзователь покидает группу"""
+        self.client.force_authenticate(user=CustomUser.objects.get(username='test2'))
+        url = reverse('group-chat-users', kwargs={'pk': self.chat})
+        response = self.client.patch(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('current_users')[-1], 'test1')
+
+    def test_delete_group(self):
+        """удаляем группу"""
+        self.client.force_authenticate(user=self.user)
+        url = reverse('group-chat-detail', kwargs={'pk': self.chat})
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(Chat.objects.all()), 0)
+        self.assertEqual(len(GroupSettingsHasUser.objects.all()), 0)
+        self.assertEqual(len(GroupSettings.objects.all()), 0)
 
 
 class GroupSettingsChange(APITestCase):
