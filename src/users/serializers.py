@@ -12,6 +12,8 @@ from chats.serializers import ChatCardSerializer
 
 from chats.models import Chat
 
+from .services import ProfileService
+
 
 class UserDataOnChatSerializer(serializers.ModelSerializer):
     """Получаем данные о пользователе в рамках чата"""
@@ -44,6 +46,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'name', 'status', 'img', 'email']
+
+    def update(self, instance, validated_data):
+
+        service_obj = ProfileService(user=self.context.get('user'))
+        service_obj.update_profile_data(validated_data, instance)
+        instance.save()
+        return instance
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):

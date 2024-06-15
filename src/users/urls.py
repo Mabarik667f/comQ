@@ -3,7 +3,7 @@ from .views import *
 
 
 urlpatterns = [
-    path('profile/<int:user_id>/', UserProfileView.as_view()),
+    path('profile/<int:user_id>/', UserProfileView.as_view(), name='profile'),
     path('userData/<int:user_id>/', UserDataView.as_view()),
     path('userOnChat/<slug:username>/', UserDataOnChatView.as_view()),
 
