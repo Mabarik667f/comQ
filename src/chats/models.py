@@ -120,7 +120,7 @@ class Message(models.Model):
 
 
 class GroupSettings(models.Model):
-    chat = models.ForeignKey(to=Chat, on_delete=models.CASCADE, related_name="group_settings")
+    chat = models.OneToOneField(to=Chat, on_delete=models.CASCADE, related_name="group_settings")
     avatar = models.ImageField(upload_to=group_avatar_upload_path, default='chat_avatars/default.jpg')
     title = models.CharField(max_length=255, blank=False, null=False)
     users = models.ManyToManyField(to=settings.AUTH_USER_MODEL, through='GroupSettingsHasUser',
