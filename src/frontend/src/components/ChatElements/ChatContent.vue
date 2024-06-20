@@ -24,6 +24,8 @@ export default {
         const formData = ref({
             message: ''
         });
+
+        const editingMessage = ref({});
         
         const messages = ref({});
         let ws = null;
@@ -43,7 +45,20 @@ export default {
                         if (data.message.user.id != store.state.userData.id) {
                             toast(`Новое сообщение в чате: test`);
                         }
-                    }
+                    } else if (data.deleted_message) {
+                        messages.value = messages.value.filter(m => m.id !== data.deleted_message); 
+                    } else if (data.edited_message) {
+                        const index = messages.value.findIndex(m => m.id === data.edited_message.id);
+                        messages.value[index].text_content = data.edited_message.text_content;
+                    } else if (data.new_users) {
+                        console.log(data.new_users)
+                    } else if (data.deleted_user) {
+                        console.log(data.deleted_user)
+                    } else if (data.deleted_chat) {
+                        console.log(data.deleted_chat)
+                    } else if (data.leaved_user) {
+                        console.log(data.leaved_user)
+                    } 
                 };
 
                 ws.onclose = function(e) {
@@ -61,18 +76,90 @@ export default {
         watch(() => (props.chat), () => {
             setWs();
         });
-
+    
 
         const addMessage = () => {
             ws.send(
                 JSON.stringify({
                     message: formData.value.message,
+                    message_type: 'chat.message'
                 })
             );
             formData.value.message = '';
         };
 
-        return { addMessage, formData, messages};
+        const editMessage = () => {
+            ws.send(
+                JSON.stringify({
+                    message_type: 'chat.edit_message',
+                    message_id: editingMessage.value.id,
+                    message_text: formData.value.message,
+                    chat: props.chat.pk
+                })
+            )
+        }
+
+        const deleteMessage = (message) => {
+            ws.send(
+                JSON.stringify({
+                    message_type: 'chat.delete_message',
+                    message_id: message.id
+                })
+            )
+        }
+
+        const setEditMessage = (message) => {
+            formData.value.message = message.text_content;
+            editingMessage.value = message;
+        }
+
+        const deleteUserToRoom = (user) => {
+            ws.send(
+                JSON.stringify({
+                    message_type: 'chat.delete_user',
+                    deleted_user: user
+                })
+            )
+        }
+
+        const deleteRoom = () => {
+            ws.send(
+                JSON.stringify({
+                    message_type: 'chat.delete_chat',
+                })
+            )
+        }
+
+        const leaveUserToRoom = () => {
+            ws.send(
+                JSON.stringify({
+                    message_type: 'chat.leave_user',
+                })
+            )
+        }
+
+        const addUserToRoom = (addedUsers) => {
+            ws.send(
+                JSON.stringify({
+                    message_type: 'chat.add_user',
+                    users: addedUsers
+                })
+            )
+        }
+
+
+        return { addMessage,
+                editMessage,
+                deleteMessage,
+
+                deleteUserToRoom,
+                deleteRoom,
+                leaveUserToRoom,
+                addUserToRoom,
+
+                setEditMessage,
+                editingMessage,
+            formData, messages};
     }
 };
 </script>
@@ -80,7 +167,10 @@ export default {
 <template>
     <div class="chat-content">
         <div class="chat-messages">
-            <ChatMessage v-for="message in messages" :key="message.id" :message="message"></ChatMessage>
+            <ChatMessage v-for="message in messages"
+             :key="message.id" :message="message"
+             @delete-message="deleteMessage"
+             @edit-message="setEditMessage"></ChatMessage>
         </div>
         <div class="input-group new-message">
             <div class="input-group-prepend">
@@ -88,7 +178,7 @@ export default {
             </div>
             <com-input class="form-control" v-model="formData.message"></com-input>
             <div class="input-group-append">
-                <com-button class="btn-send" @click="addMessage">&#9658;</com-button>
+                <com-button class="btn-send" @click="editingMessage.value ? editMessage() : addMessage()">&#9658;</com-button>
             </div>
         </div>
     </div>
