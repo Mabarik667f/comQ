@@ -1,6 +1,5 @@
 from typing import Dict, Any
 
-from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
@@ -8,23 +7,54 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Auth
 from rest_framework_simplejwt.tokens import Token, RefreshToken
 
 from .models import *
-from chats.serializers import ChatCardSerializer
-
-from chats.models import Chat
+from chats.serializers import ChatCardSerializer, GroupSettingsHasUserSerializer
 
 from .services import ProfileService
+from chats.models import GroupSettingsHasUser, UserToChat, Chat, GroupSettings
+
+
+class RelatedUsersSerializer(serializers.ModelSerializer):
+    users = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['users', ]
+
+    def get_users(self, obj: CustomUser):
+        chat_ids = UserToChat.objects.filter(user_id=obj.pk).values('chat_id')
+        users_to_exclude = (UserToChat.objects.filter(chat_id__in=chat_ids)
+                            .exclude(user_id=obj.pk)
+                            .values_list('user_id', flat=True)
+                            .distinct())
+
+        users = CustomUser.objects.filter(pk__in=users_to_exclude)
+
+        return UserDataOnChatSerializer(users, many=True).data
 
 
 class UserDataOnChatSerializer(serializers.ModelSerializer):
     """Получаем данные о пользователе в рамках чата"""
     is_online = serializers.SerializerMethodField()
+    group_settings_has_user = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'name', 'img', 'status', 'is_online']
+        fields = ['id', 'username', 'name', 'img', 'status', 'is_online', 'group_settings_has_user']
 
     def get_is_online(self, obj: CustomUser):
         return obj.is_online()
+
+    def get_group_settings_has_user(self, obj: CustomUser):
+        chat = self.context.get('chat', None)
+        if chat is not None:
+            try:
+                group_settings = GroupSettings.objects.get(chat=chat)
+                group_has_user_settings = GroupSettingsHasUser.objects.get(user=obj, group_settings=group_settings)
+                return GroupSettingsHasUserSerializer(group_has_user_settings, many=False).data
+            except GroupSettings.DoesNotExist:
+                return None
+            except GroupSettingsHasUser.DoesNotExist:
+                return None
 
 
 class UserDataSerializer(serializers.ModelSerializer):
