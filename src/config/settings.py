@@ -143,15 +143,54 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
+        'users-file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': f"{BASE_DIR}/logs/log.log",
+            'filename': f"{BASE_DIR}/logs/users.log",
             'formatter': 'custom_formatter',
             'encoding': 'utf-8'
         },
+        'consumer-file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': f"{BASE_DIR}/logs/consumer.log",
+            'formatter': 'custom_formatter',
+            'encoding': 'utf-8'
+        },
+        'chats-file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': f"{BASE_DIR}/logs/chats.log",
+            'formatter': 'custom_formatter',
+            'encoding': 'utf-8'
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        }
     },
-    'loggers': {},
+    'loggers': {
+        'consumer': {
+            "handlers": ['consumer-file'],
+            "level": 'INFO',
+            "propagate": True
+        },
+        'chats': {
+            "handlers": ['chats-file'],
+            "level": 'INFO',
+            "propagate": True
+        },
+        "users": {
+            "handlers": ['users-file'],
+            "level": 'INFO',
+            "propagate": True
+        },
+        "root": {
+            "handlers": ['console'],
+            "level": "INFO",
+            "propagate": True
+        }
+    },
 }
 
 # Internationalization
