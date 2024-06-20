@@ -25,6 +25,7 @@ class RelatedUsersView(generics.ListAPIView):
         username = self.kwargs.get(self.lookup_url_kwarg)
         return CustomUser.objects.filter(username=username)
 
+
 class UserDataOnChatView(generics.RetrieveAPIView):
     """Получаем данные о пользователе в рамках чата"""
     serializer_class = UserDataOnChatSerializer

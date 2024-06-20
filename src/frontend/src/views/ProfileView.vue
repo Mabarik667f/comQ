@@ -1,12 +1,10 @@
 <script>
 import ComProfile from '@/components/ComProfile';
-import ChangeProfile from "@/components/ChangeProfile.vue"
 import getProfileData from "@/hooks/getProfileData"
 import { onMounted, ref } from 'vue';
 export default {
   components: {
     ComProfile,
-    ChangeProfile
   },
   setup() {
     const user = ref({});
@@ -21,7 +19,6 @@ export default {
 <template>
   <div class="profile">
     <ComProfile :user="user"></ComProfile>
-    <ChangeProfile></ChangeProfile>
     {{ userData }}
   </div>
 </template>
