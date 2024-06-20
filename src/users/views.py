@@ -14,6 +14,17 @@ from .serializers import *
 USER: CustomUser = get_user_model()
 
 
+class RelatedUsersView(generics.ListAPIView):
+    queryset = CustomUser.objects.all()
+    authentication_classes = [JWTAuthentication]
+    serializer_class = RelatedUsersSerializer
+    lookup_field = "username"
+    lookup_url_kwarg = "username"
+
+    def get_queryset(self):
+        username = self.kwargs.get(self.lookup_url_kwarg)
+        return CustomUser.objects.filter(username=username)
+
 class UserDataOnChatView(generics.RetrieveAPIView):
     """Получаем данные о пользователе в рамках чата"""
     serializer_class = UserDataOnChatSerializer

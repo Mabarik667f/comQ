@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
 from .models import CustomUser
+from chats.tests import create_users
 
 
 def create_user():
@@ -73,3 +74,23 @@ class ChangeProfileDataTest(APITestCase):
         self.assertEqual(obj.name, "testName")
         self.assertNotEqual(obj.img, "default.jpg")
 
+
+class GetRelatedUsersTest(APITestCase):
+
+    def setUp(self):
+        self.user, self.client = create_users()
+        self.client.force_authenticate(user=self.user)
+        url = reverse('create-private')
+        data = {'current_users': ['test1'],
+                'chat_type': 'P',
+                'host': 0}
+        data2 = {'current_users': ['test2'],
+                'chat_type': 'P',
+                'host': 0}
+        self.client.post(url, data, format='json')
+        self.client.post(url, data2, format='json')
+
+    def test_get_users(self):
+        url = reverse('related-users', kwargs={"username": 'testuser'})
+        response = self.client.get(url, format='json')
+        print(response.data)
