@@ -4,10 +4,11 @@ import ChatCard from '@/components/UI/ChatCard.vue';
 import { mapActions, useStore } from 'vuex';
 import getUserData from '@/hooks/getUserData';
 import { ref, onMounted, computed } from 'vue';
-import getChatCardData from '@/hooks/chatHooks/getChatCardData';
+import groupChatDetail from '@/hooks/chatHooks/groupChatDetail';
 import router from '@/router';
 import { addWebSocket } from '@/hooks/wsHooks/websockets';
 import Cookies from 'js-cookie';
+import getUserDataOnChat from '@/hooks/getUserDataOnChat';
 
 export default {
     components: {
@@ -19,7 +20,6 @@ export default {
     setup() {
         const store = useStore();
         const chats = computed(() => store.getters.getChats);
-        const usersChoices = ref([]);
 
         const chatsList = [];
         onMounted(async () => {
@@ -29,12 +29,11 @@ export default {
             for (let chat of userData.value.chats) {
                 if (chat.chat_type === 'P') {
                     const addUser = chat.current_users.filter(c => c.username !== userData.value.username)[0];
-                    usersChoices.value.push({value: addUser.username, name: addUser.name})
-                    const {chatData: partnerData} = await getChatCardData(addUser.username);
+                    const {userData: partnerData} = await getUserDataOnChat(addUser.username);
                     chat.partner = partnerData.value;
                     chatsList.push(chat);
                 } else {
-                    const {chatData: groupSettings} = await getChatCardData(chat.pk);
+                    const {chatData: groupSettings} = await groupChatDetail(chat.pk);
                     chat.groupSettings = groupSettings.value;
                     chatsList.push(chat);
                 }
@@ -59,7 +58,9 @@ export default {
             store.dispatch('setChatDataCookies', {title: title.value, imagePath: imagePath});
             router.push({ name: 'chat-detail', params: { pk: chat.pk }});
         }
-        return {chats, usersChoices, selectChat}
+        const { relatedUsers } = store.state.userData;
+
+        return {chats, selectChat, relatedUsers}
     },
     methods: {
     ...mapActions({
@@ -71,7 +72,7 @@ export default {
 
 <template>
     <div class="chats">
-        <ChatsHeader :options="usersChoices"></ChatsHeader>
+        <ChatsHeader :options="relatedUsers"></ChatsHeader>
         <div class="short-chat" v-for="chat in chats" :key="chat.pk">
             <ChatCard :chat="chat" @click="selectChat(chat)"></ChatCard>
         </div>
