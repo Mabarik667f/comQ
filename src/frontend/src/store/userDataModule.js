@@ -6,9 +6,12 @@ export const userDataModule = {
     }),
 
     getters: {
-        username: state => state.username,
-        id: state => state.id,
-        relatedUsers: state => state.relatedUsers
+        getUserName(state) {
+            return state.username;
+        },
+        getRelatedUsers(state) {
+        return state.relatedUsers;
+        }
     },
 
     mutations: {

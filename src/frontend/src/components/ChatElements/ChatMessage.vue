@@ -8,6 +8,14 @@ export default {
             type: Object
         }
     },
+    methods: {
+        editMessage() {
+            this.$emit('edit-message', this.message);
+        },
+        deleteMessage() {
+            this.$emit('delete-message', this.message);
+        },
+    },
 
     setup(props) {
         const store = useStore();
@@ -48,6 +56,9 @@ export default {
         <div class="message-date">
             {{ messageDate }}
         </div>
+        <com-button @click="deleteMessage">Удалить</com-button>
+        <com-button v-if="message.user.username === currentUserName" @click="editMessage">Редактировать</com-button>
+        
     </div>
 
 </template>

@@ -10,6 +10,7 @@
 import {mapActions} from "vuex";
 import ChatsSidebar from "@/components/ChatsSidebar";
 import getUserData from "@/hooks/getUserData";
+import getRelatedUsers from "@/hooks/getRelatedUsers"
 import { useStore } from "vuex";
 import {onMounted} from "vue";
 export default {
@@ -23,23 +24,23 @@ export default {
             logout: 'logout'
     }),
   },
-  // onMounted() {
-  //   this.$store.dispatch('verifyToken');
-  //   this.interval = setInterval(() => {
-  //     this.$store.dispatch('verifyToken');
-  //   }, 14 * 60 * 1000);
-  // },
-  // unmounted() {
-  //   clearInterval(this.interval);
-  // },
+
   setup() {
     const store = useStore();
 
     const fetchUserData = async () => {
-      const { asyncCall } = getUserData();
-      const { userData: fetchedUserData } = await asyncCall();
+      const { asyncCall: getUserDataHook } = getUserData();
+      const { userData: fetchedUserData } = await getUserDataHook();
+      
       store.commit('setUserData', { username: fetchedUserData.value.username,
          id: fetchedUserData.value.id });
+
+      const { asyncCall: getRelatedUsersHook } = getRelatedUsers()
+      const { relatedUsers } = await getRelatedUsersHook(fetchedUserData.value.username);
+  
+      relatedUsers.value[0].users.forEach(user => {
+        store.dispatch('addRelatedUser', {user: {value: user.username, name: user.name}})
+      })
     };
     
     onMounted(async () => {
