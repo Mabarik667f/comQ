@@ -10,7 +10,7 @@ import logging
 from .services import GroupChatService, PrivateChatService, GroupSettingsService, GroupSettingsHasUserService, \
     MessageService
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("chats")
 
 """Вынос логики во views и services"""
 
@@ -28,9 +28,8 @@ class MessageSerializer(serializers.ModelSerializer):
             'file_content': {'required': False},
             'img_content': {'required': False},
             "text_content": {"required": False},
-            "content_type": {"default": "T"}
+            "content_type": {"default": "T"},
         }
-
 
     def create(self, validated_data):
         return Message.objects.create(**validated_data)
@@ -92,7 +91,8 @@ class ChatSerializer(serializers.ModelSerializer):
 
     def get_current_users(self, obj: Chat):
         from users.serializers import UserDataOnChatSerializer
-        return UserDataOnChatSerializer(obj.current_users.all(), many=True).data
+        return UserDataOnChatSerializer(obj.current_users.all(), many=True,
+                                        context={'chat': obj}).data
 
 
 class GroupChatSerializer(ChatSerializer):
@@ -149,7 +149,7 @@ class GroupSettingsSerializer(serializers.ModelSerializer):
 
     def update(self, instance: GroupSettings, validated_data):
         service_obj = GroupSettingsService(user=self.context.get('user'))
-        service_obj.update_group_settings(validated_data, instance)
+        service_obj.update_group_se1ttings(validated_data, instance)
         instance.save()
         return instance
 

@@ -44,7 +44,6 @@ class Chat(models.Model):
 
     @transaction.atomic
     def add_users(self, users, group_settings=None):
-        """Возможная переработка"""
         if self.chat_type == self.TypesOfChats.PRIVATE and isinstance(users, int):
             user = users
             self.current_users.add(user)

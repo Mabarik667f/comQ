@@ -10,6 +10,11 @@ from users.models import CustomUser
 from django.core.files.uploadedfile import SimpleUploadedFile
 from .models import GroupSettings, Chat, GroupSettingsHasUser, Message, MessageContent
 
+"""ВНИМАНИЕ !
+Все тесты кроме CreateChatTest() не работает, так как API было заменено WS !
+Нужно переписать тесты под WebsocketConsumer
+"""
+
 
 def create_users():
     user = CustomUser.objects.create_user(

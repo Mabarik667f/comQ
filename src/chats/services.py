@@ -2,6 +2,7 @@
 import functools
 import logging
 
+from channels.db import database_sync_to_async
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
 
@@ -14,13 +15,13 @@ logger = logging.getLogger(__name__)
 def check_to_admin(func):
     """Проверка на админа"""
     @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        group_settings = self.get_group_settings()
-        group_settings_has_user = get_object_or_404(GroupSettingsHasUser,
-                                                    group_settings=group_settings,
-                                                    user=self.user)
+    async def wrapper(self, *args, **kwargs):
+        group_settings = await self.get_group_settings()
+        group_settings_has_user = await database_sync_to_async(get_object_or_404)(GroupSettingsHasUser,
+                                                                group_settings=group_settings,
+                                                                user=self.user)
         if group_settings_has_user.get_role_display() in ('admin', 'owner'):
-            return func(self, *args, **kwargs)
+            return await func(self, *args, **kwargs)
         else:
             logger.error('Вы не являетесь админом!')
             raise ValueError('Вы не являетесь админом!')
@@ -30,16 +31,17 @@ def check_to_admin(func):
 
 def check_to_owner(func):
     """Проверка на владельца"""
+
     @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        group_settings = self.get_group_settings()
-        group_settings_has_user = get_object_or_404(GroupSettingsHasUser,
-                                                    group_settings=group_settings,
-                                                    user=self.user)
+    async def wrapper(self, *args, **kwargs):
+        group_settings = await self.get_group_settings()
+        group_settings_has_user = await database_sync_to_async(get_object_or_404)(GroupSettingsHasUser,
+                                                                                  group_settings=group_settings,
+                                                                                  user=self.user)
         if group_settings_has_user.get_role_display() == 'owner':
-            return func(self, *args, **kwargs)
+            return await func(self, *args, **kwargs)
         else:
-            logger.error('Вы не являетесь владельцем!')
+            logger.error('Вы не являетесь админом!')
             raise ValueError('Вы не являетесь админом!')
 
     return wrapper
@@ -51,28 +53,33 @@ class GroupChatService:
         self.user = user
         self.chat = chat
 
+    @database_sync_to_async
+    def get_chat_field(self, field):
+        return getattr(self.chat, field)
+
+    @database_sync_to_async
     def get_group_settings(self):
         return get_object_or_404(GroupSettings, chat=self.chat)
 
     @check_to_admin
-    def add_user(self, validated_data):
-        group_settings = self.get_group_settings()
-        self.chat.add_users(validated_data.get('current_users'), group_settings)
+    async def add_user(self, added_user):
+        group_settings = await self.get_group_settings()
+        await database_sync_to_async(self.chat.add_users)(added_user, group_settings)
 
     @check_to_admin
-    def delete_user(self, validated_data):
-        del_user = validated_data.get('current_users')[0]
-        if self.chat.host == del_user:
+    async def delete_user(self, deleted_user):
+        if await self.get_chat_field("host") == deleted_user:
             raise ValueError("Вы не можете удалить владельца чата")
         else:
-            self.chat.delete_user(del_user)
+            await database_sync_to_async(self.chat.delete_user)(deleted_user.pk)
 
-    def leave_user(self):
-        self.chat.delete_user(self.user)
+    async def leave_user(self):
+        await database_sync_to_async(self.chat.delete_user)(self.user)
 
     @check_to_owner
-    def delete_group(self):
-        self.chat.delete()
+    async def delete_group(self):
+        # возможна доработка
+        await database_sync_to_async(self.chat.delete)()
 
     @staticmethod
     def get_or_create_group_settings(chat, title=None):
