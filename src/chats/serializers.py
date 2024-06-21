@@ -149,7 +149,7 @@ class GroupSettingsSerializer(serializers.ModelSerializer):
 
     def update(self, instance: GroupSettings, validated_data):
         service_obj = GroupSettingsService(user=self.context.get('user'))
-        service_obj.update_group_se1ttings(validated_data, instance)
+        service_obj.update_group_settings(validated_data, instance)
         instance.save()
         return instance
 
