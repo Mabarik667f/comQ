@@ -2,7 +2,8 @@ export const userDataModule = {
     state: () => ({
         username: '',
         id: '',
-        relatedUsers: []
+        relatedUsers: [],
+        currentChatRole: 'D'
     }),
 
     getters: {
@@ -11,6 +12,9 @@ export const userDataModule = {
         },
         getRelatedUsers(state) {
         return state.relatedUsers;
+        },
+        getUserRole(state) {
+            return state.currentChatRole
         }
     },
 
@@ -21,6 +25,9 @@ export const userDataModule = {
         },
         addRelatedUserMutation(state, {user}) {
             state.relatedUsers.push(user)
+        },
+        setUserRole(state, {role}) {
+            state.currentChatRole = role;
         }
     },
 
