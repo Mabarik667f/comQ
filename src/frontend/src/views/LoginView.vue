@@ -69,15 +69,27 @@ export default {
             </div>
         </template>
         <template v-slot:button>
-            <com-button class="login__btn">Войти</com-button>
+            <div class="buttons">
+                <com-button @click="$router.push('/register')" :type="'button'">Регистрация</com-button>
+                <com-button class="login-btn">Войти</com-button>
+            </div>
         </template>
     </com-form>
 </template>
 
 
 <style scoped>
-.login__btn {
+
+.buttons {
+    display: flex;
+    flex-direction: row;
+}
+.buttons {
+    margin-top: 10px;
+}
+.login-btn {
     width: 120px;
+    margin-left: 10px;
 }
 
 </style>
