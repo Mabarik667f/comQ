@@ -1,26 +1,58 @@
 <script>
-import { watch, ref, onMounted } from 'vue';
+import { watch, ref, computed } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
-    setup() {
+    props: {
+        chat: {
+            type: Object,
+            required: true
+        }
+    },
+    setup(props) {
         const store = useStore();
-        const header = ref(store.state.currentChat.title);
-        const imagePath = ref(store.state.currentChat.imagePath);
-        const updateHeaderAndImagePath = (newTitle, newImagePath) => {
-            header.value = newTitle;
-            imagePath.value = newImagePath;
-        };
+        const group_settings = ref(null);
+        const header = ref(null);
+        const image = ref(null);
+        const chatDescribe = ref({
+            status: '',
+            amountUsers: 0
+        })
 
-        watch(() => [store.state.currentChat.title, store.state.currentChat.imagePath], ([newTitle, newImagePath]) => {
-            updateHeaderAndImagePath(newTitle, newImagePath);
-        });
+        const chatData = computed(() => store.getters.getChat(props.chat.pk))
 
-        onMounted( () => {
-            updateHeaderAndImagePath(store.state.currentChat.title, store.state.currentChat.imagePath);
-        });
+        watch(() => chatData.value?.partner, (partner) => {
+            if (partner) {
+                chatDescribe.value.status = partner.status;
+                header.value = partner.name;
+                image.value = partner.img;
+            }
+        }, { immediate: true })
 
-        return {header, imagePath}
+        watch(() => chatData.value?.groupSettings, (groupSettings) => {
+            if (groupSettings) {
+                group_settings.value = groupSettings;
+                chatDescribe.value.amountUsers = chatData.value.current_users.length;
+                header.value = groupSettings.title;
+                image.value = groupSettings.avatar;
+            }
+        }, { immediate: true })
+
+
+        watch(() => chatData.value?.groupSettings?.avatar, (newAvatar) => {
+            if (newAvatar) {
+                image.value = newAvatar;
+            }
+        }, { immediate: true });
+
+        watch(() => chatData.value?.groupSettings?.title, (newTitle) => {
+            if (newTitle) {
+                header.value = newTitle;
+            }
+        }, { immediate: true });
+
+
+        return {header, image, chatData, chatDescribe}
     }
 }
 </script>
@@ -28,8 +60,14 @@ export default {
 <template>
     <div class="chat-header">
         <div class="chat-header-info">
-            <div>{{header}}</div>
-            <img :src="imagePath" class="short-chat-img">
+            <div class="chat-img">
+                <img :src="image" class="short-chat-img">
+            </div>
+            <div class="chat-header-text">
+                <span>{{ header }}</span>
+                <span v-if="chat.chat_type === 'G'">{{ chatDescribe.amountUsers }}</span>
+                <span v-else>{{ chatDescribe.status }}</span>
+            </div>
         </div>
     </div>
 </template>
@@ -39,13 +77,28 @@ export default {
     background-color: gainsboro;
     width: 100%;
     height: 7vh;
+    cursor: pointer;
 }
 .chat-header-info {
     display: flex;
+    padding-left: 20px;
+    padding-top: 8px;
+}
+
+.chat-header-text {
+    display: flex;
     flex-direction: column;
+    align-content: center;
+}
+
+.chat-img {
+    width: 65px;
 }
 .short-chat-img {
-  width: 65px;
+  width: 100%;
+  height: auto;
   border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover;
 }
 </style>

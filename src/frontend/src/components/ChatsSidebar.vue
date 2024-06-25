@@ -1,14 +1,12 @@
 <script>
 import ChatsHeader from '@/components/ChatsHeader.vue';
 import ChatCard from '@/components/UI/ChatCard.vue';
-import { mapActions, useStore } from 'vuex';
+import { useStore } from 'vuex';
 import getUserData from '@/hooks/getUserData';
-import { ref, onMounted, computed } from 'vue';
-import groupChatDetail from '@/hooks/chatHooks/groupChatDetail';
+import cleanChatData from "@/hooks/chatHooks/cleanChatData"
+import { computed, ref, onMounted } from 'vue';
 import router from '@/router';
-import { addWebSocket } from '@/hooks/wsHooks/websockets';
-import Cookies from 'js-cookie';
-import getUserDataOnChat from '@/hooks/getUserDataOnChat';
+
 
 export default {
     components: {
@@ -20,67 +18,46 @@ export default {
     setup() {
         const store = useStore();
         const chats = computed(() => store.getters.getChats);
-
-        const chatsList = [];
-        onMounted(async () => {
+        const userData = ref();
+        const chatsLength = ref(0);
+        
+        // const getUserDataHook = async () => {
+        //     const {asyncCall} = getUserData();
+        //     const {userData: data} = await asyncCall();
+        //     userData.value = data.value;
+        //     chatsLength.value = userData.value.chats.length
+        // }
+        const reloadChats = async () => {
             const {asyncCall} = getUserData();
-            const {userData} = await asyncCall();
-
-            for (let chat of userData.value.chats) {
-                if (chat.chat_type === 'P') {
-                    const addUser = chat.current_users.filter(c => c.username !== userData.value.username)[0];
-                    const {userData: partnerData} = await getUserDataOnChat(addUser.username);
-                    chat.partner = partnerData.value;
-                    chatsList.push(chat);
-                } else {
-                    const {chatData: groupSettings} = await groupChatDetail(chat.pk);
-                    chat.groupSettings = groupSettings.value;
-                    chatsList.push(chat);
-                }
-                const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`);
-                addWebSocket(chat.pk, ws);
-
+            const {userData: data} = await asyncCall();
+            userData.value = data.value;
+            chatsLength.value = data.value.chats.length
+            for (let chat of data.value.chats) {
+                await cleanChatData(chat, data.value.username)
             }
-            store.dispatch('initializeChats', {chats: chatsList});
-        })
+        }
 
         const selectChat = async (chat) => {
-            const title = ref('');
-            const imagePath = ref('');
-            if(chat.partner) {
-                title.value = chat.partner.name;
-                imagePath.value = chat.partner.img;
-            } else {
-                title.value = chat.groupSettings.group_settings.title;
-                imagePath.value = chat.groupSettings.group_settings.avatar;
-            }
-            store.commit('setChatData', {title: title.value, imagePath: imagePath.value})
-            store.dispatch('setChatDataCookies', {title: title.value, imagePath: imagePath});
             router.push({ name: 'chat-detail', params: { pk: chat.pk }});
         }
-        const { relatedUsers } = store.state.userData;
 
-        return {chats, selectChat, relatedUsers}
+        onMounted(async () => {
+            await reloadChats();
+        });
+
+        
+        const { relatedUsers } = store.state.userData;
+        return {chats, selectChat, relatedUsers, userData}
     },
-    methods: {
-    ...mapActions({
-            logout: 'logout'
-    })
-  }
 }
 </script>
 
 <template>
     <div class="chats">
-        <ChatsHeader :options="relatedUsers"></ChatsHeader>
-        <div class="short-chat" v-for="chat in chats" :key="chat.pk">
+        <ChatsHeader :options="relatedUsers" :userData="userData"></ChatsHeader>
+        <div class="short-chat" v-for="chat in chats" :key="chat">
             <ChatCard :chat="chat" @click="selectChat(chat)"></ChatCard>
         </div>
-        <com-button
-        @click="$router.push('/register')">Зарегистрироваться</com-button>
-        <com-button
-        @click="$router.push('/login')">Войти</com-button>
-        <com-button @click.prevent="logout">Выйти</com-button>
     </div>
 </template>
 
@@ -94,9 +71,23 @@ export default {
     align-content: flex-start;
     justify-content: flex-start;
     align-items: flex-start;
-    width: 500px;
-    max-width: 900px;
-    overflow: auto;
+    min-width: 200px;
+    width: 300px;
+    max-width: 500px;
+    overflow: scroll;
+    resize: horizontal;
+    position: relative;
+}
+
+.chats::after{
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 10px;
+    cursor: ew-resize;
 }
 
 .short-chat {
@@ -106,6 +97,8 @@ export default {
     margin: 10px 0;
     color: whitesmoke;
     border-radius: 15px;
+    flex-direction: column;
+    cursor: pointer;
 }
 
 .short-chat:hover {

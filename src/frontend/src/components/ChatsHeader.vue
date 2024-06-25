@@ -2,39 +2,57 @@
 import SearchChat from "@/components/SearchChat";
 import createPrivateChat from "@/hooks/chatHooks/createPrivateChat"
 import createGroupChat from "@/hooks/chatHooks/createGroupChat"
+import cleanChatData from "@/hooks/chatHooks/cleanChatData";
 import Multiselect from 'vue-multiselect'
-import { ref } from "vue";
+import ButtonsMenu from "@/components/ChatElements/ButtonsMenu.vue"
+import { ref, watch } from "vue";
+import store from "@/store";
 export default {
     props: {
         options: {
-            require: true,
+            required: true,
             default: () => []
+        },
+        userData: {
+            type: Object,
+            required: true
         }
     },
     data() {
         return {
-            privateAddVisible: false,
-            groupAddVisible: false
+            menu: false
         }
     },
     components: {
         SearchChat,
-        Multiselect
+        Multiselect,
+        ButtonsMenu
     },
     methods: {
-        showPrivateDialog() {
-            this.privateAddVisible = true;
-        },
-        showGroupDialog() {
-            this.groupAddVisible = true;
-        },
+        showMenu() {
+            this.menu = true;
+        }
         
     },
-    setup() {
+    setup(props) {
+
+        const privateAddVisible = ref(false)
+        const groupAddVisible = ref(false)
+        const userData = ref()
+        
+        watch(() => props.userData, (newData) => {
+            userData.value = newData
+        })
+
+        const showPrivateDialog = (event) => {
+            privateAddVisible.value = event;
+        }
+        const showGroupDialog = (event) => {
+            groupAddVisible.value = event;
+        }
 
         const createPrivateForm = ref({
             username: '',
-            firstMessage: '',
             chatType: 'P'
         })
 
@@ -45,13 +63,16 @@ export default {
         })
 
         const createPrivateChatHook = async () => {
-                const {asyncCall} = createPrivateChat();
-                await asyncCall(createPrivateForm.value);
-            }
+            const {asyncCall} = createPrivateChat();
+            const {chat} = await asyncCall(createPrivateForm.value);
+            await cleanChatData(chat.value, store.getters.getUserName)
+        }
+            
 
         const createGroupChatHook = async () => {
             const {asyncCall} = createGroupChat();
-            await asyncCall(createGroupForm.value);
+            const {chat} = await asyncCall(createGroupForm.value);
+            await cleanChatData(chat.value, store.getters.getUserName)
         }
 
         return {
@@ -60,6 +81,11 @@ export default {
 
             createPrivateChatHook,
             createGroupChatHook,
+
+            showPrivateDialog,
+            showGroupDialog,
+            privateAddVisible,
+            groupAddVisible
         }
     }    
 }
@@ -68,10 +94,13 @@ export default {
 <template>
     <div class="chats-header">
         
-        <com-button :class="'menu-button'">&#9776;</com-button>
-        
+        <com-button :class="'menu-button'" @click="showMenu">&#9776;</com-button>
+        <ButtonsMenu
+        v-model:show="menu"
+        @private="showPrivateDialog"
+        @group="showGroupDialog"></ButtonsMenu>
         <SearchChat></SearchChat>
-        <!--Модальное окно для создание лс-->
+
         <com-dialog v-model:show="privateAddVisible" class="privateChatCreate">
             <com-form @submit.prevent="createPrivateChatHook()">
                 <template v-slot:header>
@@ -86,19 +115,13 @@ export default {
                     v-model="createPrivateForm.username"
                     required></com-input>
 
-                    <label :for="'firstMessage'">Сообщение</label>
-                    <com-text :id="'firstMessage'" class="form-control"
-                    v-model="createPrivateForm.firstMessage"></com-text>
-
-
                 </template>
                 <template v-slot:button>
-                    <com-button>Отправить</com-button>
+                    <com-button>Создать</com-button>
                 </template>
             </com-form>
         </com-dialog>
 
-        <!--Модальное окно для создание группы-->
         <com-dialog v-model:show="groupAddVisible" class="groupChatCreate">
             <p>Добавьте участников в группу</p>
             <com-form @submit.prevent="createGroupChatHook()">
@@ -128,9 +151,6 @@ export default {
                 </template>
             </com-form>
         </com-dialog>
-
-        <com-button @click="showPrivateDialog">Новый чат</com-button>
-        <com-button @click="showGroupDialog">Создать группу</com-button>
     </div>
 </template>
 

@@ -96,7 +96,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
 
 class GroupChatSerializer(ChatSerializer):
-
+    last_message = serializers.SerializerMethodField()
     group_settings = serializers.SerializerMethodField()
     current_users = SlugRelatedField(
         slug_field='username',
@@ -106,7 +106,7 @@ class GroupChatSerializer(ChatSerializer):
 
     class Meta(ChatSerializer.Meta):
         depth = 1
-        fields = ChatSerializer.Meta.fields + ('group_settings',)
+        fields = ChatSerializer.Meta.fields + ('group_settings', 'last_message')
         extra_kwargs = {
             'chat_type': {'required': False},
         }
@@ -121,9 +121,13 @@ class GroupChatSerializer(ChatSerializer):
         group_settings = service_obj.get_or_create_group_settings(chat=obj)
         return GroupSettingsSerializer(group_settings).data
 
+    def get_last_message(self, obj: Chat):
+        return MessageSerializer(obj.messages.order_by('created_at').last()).data
+
 
 class PrivateChatSerializer(ChatSerializer):
     """Добавить сюда пользователя - собеседника"""
+    last_message = serializers.SerializerMethodField()
     current_users = SlugRelatedField(
         slug_field='username',
         queryset=CustomUser.objects.all(),
@@ -131,13 +135,16 @@ class PrivateChatSerializer(ChatSerializer):
 
     class Meta(ChatSerializer.Meta):
         depth = 1
-        fields = ChatSerializer.Meta.fields
+        fields = ChatSerializer.Meta.fields + ('last_message', )
 
     def create(self, validated_data):
         if len(validated_data['current_users']) == 1:
             return PrivateChatService.create_private_chat(validated_data)
         else:
             raise ValueError('error')
+
+    def get_last_message(self, obj: Chat):
+        return MessageSerializer(obj.messages.order_by('created_at').last()).data
 
 
 class GroupSettingsSerializer(serializers.ModelSerializer):
