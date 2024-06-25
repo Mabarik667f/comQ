@@ -5,7 +5,6 @@ export default function changeGroupSettings () {
     const asyncCall = async (params) => {
         const data = {}
         const newData = ref({})
-        console.log(params)
         if (params.avatar) {
             data.avatar = params.avatar
         }

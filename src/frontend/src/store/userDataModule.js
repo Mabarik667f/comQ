@@ -26,6 +26,9 @@ export const userDataModule = {
         addRelatedUserMutation(state, {user}) {
             state.relatedUsers.push(user)
         },
+        deleteUserMutation(state, {user}) {
+            state.relatedUsers = state.relatedUsers.filter(u => u.id !== user.id)
+        },
         setUserRole(state, {role}) {
             state.currentChatRole = role;
         }
@@ -34,6 +37,9 @@ export const userDataModule = {
     actions: {
         addRelatedUser({commit}, {user}) {
             commit('addRelatedUserMutation', {user: user})
+        },
+        deleteUser({commit}, {user}) {
+            commit('deleteUserMutation', {user: user})
         }
     }
 }
