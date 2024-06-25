@@ -8,24 +8,21 @@ export default {
   },
   setup() {
     const user = ref({});
+
     onMounted(async () => {
       const {userData} = await getProfileData();
       user.value = userData.value;
     })
+
     return {user}
   }
 }
 </script>
+
 <template>
-  <div class="profile">
-    <ComProfile :user="user"></ComProfile>
-    {{ userData }}
-  </div>
+    <ComProfile :user="user"></ComProfile>  
 </template>
 
 <style scoped>
-.profile{
-  display: flex;
-  flex-direction: row;
-}
+
 </style>

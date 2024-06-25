@@ -47,17 +47,21 @@ export default {
 </script>
 
 <template>
-    <div :class="{'left': message.user.username !== currentUserName,
-                'right': message.user.username === currentUserName,
-                'message': true }">
+    <div :class="{
+        'system-message': message.system,
+        'left': !message.system && message.user.username !== currentUserName,
+        'right': !message.system && message.user.username === currentUserName,
+        'message': true
+        }">
         {{ message.text_content }}
         {{ message.user.name }}
         {{ message.reply }}
         <div class="message-date">
             {{ messageDate }}
         </div>
-        <com-button @click="deleteMessage">Удалить</com-button>
-        <com-button v-if="message.user.username === currentUserName" @click="editMessage">Редактировать</com-button>
+        <com-button @click="deleteMessage" v-if="!message.system">Удалить</com-button>
+        <com-button v-if="message.user.username === currentUserName && !message.system"
+         @click="editMessage()">Редактировать</com-button>
         
     </div>
 
@@ -81,5 +85,9 @@ export default {
 
 .right {
     align-self: flex-end;
+}
+
+.system-message {
+    border: 5px blue solid;
 }
 </style>

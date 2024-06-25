@@ -77,7 +77,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     def get_group_settings(self):
         return get_object_or_404(GroupSettings, chat=Chat.objects.get(pk=self.chat_pk))
 
-    async def create_message(self, message):
+    async def create_message(self, message, system=False, reply=False):
         chat: Chat = await self.get_chat()
         content_type = await database_sync_to_async(MessageContent.objects.get_or_create)(
             name=MessageContent.TypeOfMessageContent.TEXT
@@ -86,7 +86,9 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             chat=chat,
             user=self.scope['user'],
             content_type=content_type[0],
-            text_content=message
+            text_content=message,
+            system=system,
+            reply=reply
         )
 
         return await self.get_serialized_data(MessageSerializer, new_message)
@@ -107,15 +109,20 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         user: CustomUser = await database_sync_to_async(CustomUser.objects.get)(username=user)
         service: GroupChatService = await self.get_group_service()
         await service.delete_user(deleted_user=user)
-        return await self.get_serialized_data(UserDataOnChatSerializer, user)
+        serializer_data = await self.get_serialized_data(UserDataOnChatSerializer, user)
+        message = await self.create_message(f"Пользователь {serializer_data['name']} был удален!", system=True)
+        return serializer_data, message
 
     async def leave_user(self):
         service: GroupChatService = await self.get_group_service()
         await service.leave_user()
-        return await self.get_serialized_data(UserDataOnChatSerializer, self.scope['user'])
+        serializer_data = await self.get_serialized_data(UserDataOnChatSerializer, self.scope['user'])
+        message = await self.create_message(f"Пользователь {serializer_data['name']} покинул чат!", system=True)
+        return serializer_data, message
 
     async def add_users(self, users):
         new_users = []
+        messages = []
         service: GroupChatService = await self.get_group_service()
         chat: Chat = await self.get_chat()
         for user in users:
@@ -126,7 +133,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             user_data = await self.get_serialized_data(UserDataOnChatSerializer, user,
                                                        context={"chat": chat})
             new_users.append(user_data)
-        return new_users
+            message = await self.create_message(f"Пользователь {user_data['name']} был добавлен!",
+                                                system=True)
+            messages.append(message)
+        return new_users, messages
 
     async def delete_chat(self):
         service: GroupChatService = await self.get_group_service()
@@ -181,25 +191,41 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def handle_delete_user(self, content):
-        deleted_user = await self.delete_user(user=content.get("deleted_user"))
+        deleted_user, message = await self.delete_user(user=content.get("deleted_user"))
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.delete_user",
                               "deleted_user": deleted_user}
         )
 
+        await self.channel_layer.group_send(
+            self.chat_group, {"type": "chat.message",
+                              "message": message}
+        )
+
     async def handle_leave_user(self):
-        leaved_user = await self.leave_user()
+        leaved_user, message = await self.leave_user()
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.leave_user",
-                              "leaved_user": leaved_user}
+                              "leaved_user": leaved_user,
+                              "message": message}
+        )
+
+        await self.channel_layer.group_send(
+            self.chat_group, {"type": "chat.message",
+                              "message": message}
         )
 
     async def handle_add_users(self, content):
-        new_users = await self.add_users(users=content.get('users'))
+        new_users, messages = await self.add_users(users=content.get('users'))
         await self.channel_layer.group_send(
-            self.chat_group, {"type": "chat.add_user",
+            self.chat_group, {"type": "chat.add_users",
                               "new_users": new_users}
         )
+        for message in messages:
+            await self.channel_layer.group_send(
+                self.chat_group, {"type": "chat.message",
+                                  "message": message}
+            )
 
     async def handle_delete_chat(self):
         await self.delete_chat()
@@ -224,7 +250,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def chat_leave_user(self, event):
         await self.send_json({"leaved_user": event['leaved_user']})
 
-    async def chat_add_user(self, event):
+    async def chat_add_users(self, event):
         await self.send_json({"new_users": event['new_users']})
 
     async def chat_deleted_chat(self, event):

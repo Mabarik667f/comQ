@@ -30,6 +30,15 @@ export default {
         const messages = ref({});
         let ws = null;
 
+        const createMessage = (message) => {
+            messages.value.push(message);
+            store.commit('updateLastMessage', {chatId: props.chat.pk, message: message})
+            if (message.user.id != store.state.userData.id) {
+                toast(`Новое сообщение в чате: test`);
+                store.commit('updateNotifications', { chatId: props.chat.pk, status: "add" });
+            }
+        }
+
         const setWs = () => {
             ws = getWebSocketById(props.chat.pk);
             console.log("WebSocket connection updated");
@@ -39,21 +48,31 @@ export default {
 
                 ws.onmessage = function(e) {
                     const data = JSON.parse(e.data);
+                    console.log(data)
                     if (data.message) {
-                        store.commit('updateNotifications', { chatId: props.chat.pk });
-                        messages.value.push(data.message);
-                        if (data.message.user.id != store.state.userData.id) {
-                            toast(`Новое сообщение в чате: test`);
-                        }
+                        createMessage(data.message)
                     } else if (data.deleted_message) {
-                        messages.value = messages.value.filter(m => m.id !== data.deleted_message); 
+                        messages.value = messages.value.filter(m => m.id !== data.deleted_message);
+                        let message = null;
+                        if (messages.value.length >= 1) {
+                            message = messages.value[messages.value.length - 1]
+                        } 
+                        store.commit('updateNotifications', { chatId: props.chat.pk, status: "del" });
+                        store.commit('updateLastMessage', {chatId: props.chat.pk,
+                            message: message})
+
                     } else if (data.edited_message) {
                         const index = messages.value.findIndex(m => m.id === data.edited_message.id);
-                        messages.value[index].text_content = data.edited_message.text_content;
+                        messages.value[index].text_content = data.edited_message.text_content
+                        if (index === messages.value.length - 1) {
+                            store.commit('updateLastMessage', {chatId: props.chat.pk,
+                            message: data.edited_message})
+                        }
                     } else if (data.new_users) {
                         console.log(data.new_users)
                     } else if (data.deleted_user) {
                         console.log(data.deleted_user)
+                        store.dispatch('deleteUser', {user: data.deleted_user});
                     } else if (data.deleted_chat) {
                         console.log(data.deleted_chat)
                     } else if (data.leaved_user) {
@@ -111,6 +130,7 @@ export default {
         const setEditMessage = (message) => {
             formData.value.message = message.text_content;
             editingMessage.value = message;
+            console.log(editingMessage.value)
         }
 
         const deleteUserToRoom = (user) => {
@@ -147,6 +167,10 @@ export default {
             )
         }
 
+        const cancelEditMessage = () => {
+
+        }
+
 
         return { addMessage,
                 editMessage,
@@ -159,6 +183,7 @@ export default {
 
                 setEditMessage,
                 editingMessage,
+                cancelEditMessage,
             formData, messages};
     }
 };
@@ -178,7 +203,7 @@ export default {
             </div>
             <com-input class="form-control" v-model="formData.message"></com-input>
             <div class="input-group-append">
-                <com-button class="btn-send" @click="editingMessage.value ? editMessage() : addMessage()">&#9658;</com-button>
+                <com-button class="btn-send" @click="editingMessage.text_content ? editMessage() : addMessage()">&#9658;</com-button>
             </div>
         </div>
     </div>
