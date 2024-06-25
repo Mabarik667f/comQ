@@ -104,7 +104,7 @@ class Message(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     reply = models.BooleanField(default=False)
-    # is_read = models.BooleanField(default=False)
+    system = models.BooleanField(default=False)
 
     text_content = models.TextField()
     audio_content = models.FileField(upload_to=message_file_content_upload_path)
