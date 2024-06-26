@@ -4,8 +4,8 @@ import { useStore } from 'vuex';
 
 export default {
     props: {
-        chat: {
-            type: Object,
+        chatId: {
+            type: Number,
             required: true
         }
     },
@@ -19,7 +19,12 @@ export default {
             amountUsers: 0
         })
 
-        const chatData = computed(() => store.getters.getChat(props.chat.pk))
+        const chatId = ref(props.chatId)
+        const chatData = computed(() => store.getters.getChat(chatId.value))
+
+        watch(() => (props.chatId), (newId) => {
+            chatId.value = newId
+        }, { immediate: true })
 
         watch(() => chatData.value?.partner, (partner) => {
             if (partner) {
@@ -65,7 +70,7 @@ export default {
             </div>
             <div class="chat-header-text">
                 <span>{{ header }}</span>
-                <span v-if="chat.chat_type === 'G'">{{ chatDescribe.amountUsers }}</span>
+                <span v-if="chatData?.chat_type === 'G'">{{ chatDescribe.amountUsers }}</span>
                 <span v-else>{{ chatDescribe.status }}</span>
             </div>
         </div>

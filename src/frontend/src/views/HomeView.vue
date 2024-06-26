@@ -1,7 +1,7 @@
 <template>
   
   <div class="main">
-    <ChatsSidebar></ChatsSidebar>
+    <ChatsSidebar :userData="userData"></ChatsSidebar>
     <router-view></router-view>
   </div>
 </template>
@@ -12,7 +12,7 @@ import ChatsSidebar from "@/components/ChatsSidebar";
 import getUserData from "@/hooks/getUserData";
 import getRelatedUsers from "@/hooks/getRelatedUsers"
 import { useStore } from "vuex";
-import {onMounted} from "vue";
+import {onMounted, ref} from "vue";
 export default {
   name: 'HomeView',
   components: {
@@ -28,10 +28,11 @@ export default {
   setup() {
     const store = useStore();
 
+    const userData = ref();
     const fetchUserData = async () => {
       const { asyncCall: getUserDataHook } = getUserData();
       const { userData: fetchedUserData } = await getUserDataHook();
-      
+      userData.value = fetchedUserData;
       store.commit('setUserData', { username: fetchedUserData.value.username,
          id: fetchedUserData.value.id });
 
@@ -47,6 +48,7 @@ export default {
       fetchUserData();
     });
 
+    return {userData}
   }
 }
 

@@ -5,13 +5,10 @@ import ChatGroupSettingsChange from "@/components/ChatElements/ChatGroupSettings
 import UserCard from '@/components/UI/UserCard.vue';
 import Multiselect from 'vue-multiselect'
 
-import { onMounted, ref, watch, computed } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 
-import getChatData from '@/hooks/chatHooks/getChatData';
-import getUserDataOnChat from '@/hooks/getUserDataOnChat';
-import groupChatDetail from "@/hooks/chatHooks/groupChatDetail"
 import isAdmin from "@/hooks/permissionHooks/isAdmin"
 import isOwner from "@/hooks/permissionHooks/isOwner"
 
@@ -38,43 +35,30 @@ export default {
         const route = useRoute();
         const store = useStore();
 
-        const chat = ref({});
         const addedUsers = ref([]);
         const relatedUsersInGroup = ref([]);
 
-        const chatId = ref(route.params.pk);
+        const chatId = ref(parseInt(route.params.pk));
+        const chat = computed(() => store.getters.getChat(chatId.value));
         const relatedUsers = computed(() => store.getters.getRelatedUsers);
 
         const fetchData = async () => {
-            const {chatData} = await getChatData(chatId.value);
-            chat.value = chatData.value;
+            
             if (chat.value.chat_type === 'G') {
-
-                const {chatData: group_settings} = await groupChatDetail(chat.value.pk)
-                chat.value.groupSettings = group_settings.value.group_settings
                 relatedUsersInGroup.value = relatedUsers.value.filter(u => !chat.value.current_users.some(
                     currentUser => currentUser.username === u.value)
                 )
                 const currentUser = chat.value.current_users.filter(u => u.username === store.getters.getUserName)[0]
                 store.commit('setUserRole', {role: currentUser.group_settings_has_user.role});
-
-            } else {
-                const addUser = chat.value.current_users.filter(c => c.username !== store.state.userData.username)[0];
-                const {userData} = await getUserDataOnChat(addUser.username)
-                chat.value.partner = userData.value
             }
-
         }
 
-        onMounted( () => {
-            fetchData();
-        })
-
         watch(() => route.params.pk, (newChatId) => {
-            // решить проблему с фантомным запросом
-            chatId.value = newChatId;
+            chatId.value = parseInt(newChatId);
+        }, {deep: true, immediate: true})
+
+        watch(() => (chat.value), () => {
             fetchData();
-            
         })
 
         const deleteUserToRoomHook = (event) => {
@@ -99,8 +83,8 @@ export default {
         }
 
         const child = ref(null);
-        
         return {chat,
+                chatId,
                 child,
                 relatedUsersInGroup,
                 addedUsers,
@@ -121,16 +105,15 @@ export default {
 <template>
     <div class="chat">
 
-        <ChatHeader @click="showSettings()" :chat="chat"></ChatHeader>
+        <ChatHeader @click="showSettings()" :chatId="parseInt(chatId)"></ChatHeader>
         <com-dialog v-model:show="settingsVisible" class="chat-settings">
             
-            <ChatGroupSettingsChange v-if="chat.chat_type === 'G'"
-            :groupSettings="chat.groupSettings" :chat="chat"></ChatGroupSettingsChange>
-            <h1>{{store.state.currentChat.title}}</h1>
+            <ChatGroupSettingsChange v-if="chat && chat.chat_type === 'G'"
+            :groupSettings="chat?.groupSettings" :chatId="parseInt(chatId)"></ChatGroupSettingsChange>
             <h2>Информация</h2>
 
             <com-button @click="deleteRoomHook()" v-if="isOwner()">Удалить группу</com-button>
-            <div v-if="chat.chat_type === 'G'">
+            <div v-if="chat && chat.chat_type === 'G'">
                 <div class="add-users" v-if="isAdmin()">
                     <label class="typo__label">Tagging</label>
                     <multiselect c v-model="addedUsers"
@@ -141,7 +124,7 @@ export default {
                 </multiselect>
                     <com-button @click=addUserToRommHook()>Добавить</com-button>
                 </div>
-                <div v-for="user in chat.current_users" :key="user">
+                <div v-for="user in chat?.current_users" :key="user">
                     <UserCard :user="user" :chat="chat" 
                     @leaveUser="leaveUserToRoomHook" 
                     @changeRole="changeRoleHook"
@@ -150,7 +133,7 @@ export default {
                 </div>
             </div>
         </com-dialog>
-        <ChatContent :chat="chat" ref="child"></ChatContent>
+        <ChatContent :chatId="parseInt(chatId)" ref="child"></ChatContent>
     </div>
 </template>
 

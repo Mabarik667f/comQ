@@ -78,13 +78,14 @@ class ChatCardSerializer(serializers.ModelSerializer):
 
 
 class ChatSerializer(serializers.ModelSerializer):
+    last_message = serializers.SerializerMethodField()
     messages = MessageSerializer(many=True, read_only=True)
     current_users = serializers.SerializerMethodField()
     host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
 
     class Meta:
         model = Chat
-        fields = ('messages', 'chat_type', 'host', 'current_users', 'pk')
+        fields = ('messages', 'chat_type', 'host', 'current_users', 'pk', 'last_message')
 
     def create(self, validated_data):
         raise NotImplementedError()
@@ -93,6 +94,9 @@ class ChatSerializer(serializers.ModelSerializer):
         from users.serializers import UserDataOnChatSerializer
         return UserDataOnChatSerializer(obj.current_users.all(), many=True,
                                         context={'chat': obj}).data
+
+    def get_last_message(self, obj: Chat):
+        return MessageSerializer(obj.messages.order_by('created_at').last()).data
 
 
 class GroupChatSerializer(ChatSerializer):

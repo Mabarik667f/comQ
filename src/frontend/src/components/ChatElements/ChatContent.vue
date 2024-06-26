@@ -1,6 +1,6 @@
 <script>
 import ChatMessage from "@/components/ChatElements/ChatMessage.vue"
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import {getWebSocketById} from "@/hooks/wsHooks/websockets"
 import { useToast } from "vue-toastification";
 import { useStore } from "vuex";
@@ -10,9 +10,8 @@ export default {
         ChatMessage
     },
     props: {
-        chat: {
-            default: () => {},
-            type: Object,
+        chatId: {
+            type: Number,
             required: true
         }
     },
@@ -20,6 +19,9 @@ export default {
 
         const toast = useToast();
         const store = useStore();
+
+        const chatId = ref(props.chatId);
+        const chat = computed(() => store.getters.getChat(chatId.value));
 
         const formData = ref({
             message: ''
@@ -32,18 +34,18 @@ export default {
 
         const createMessage = (message) => {
             messages.value.push(message);
-            store.commit('updateLastMessage', {chatId: props.chat.pk, message: message})
+            store.commit('updateLastMessage', {chatId: chatId.value, message: message})
             if (message.user.id != store.state.userData.id) {
                 toast(`Новое сообщение в чате: test`);
-                store.commit('updateNotifications', { chatId: props.chat.pk, status: "add" });
+                store.commit('updateNotifications', { chatId: chatId.value, status: "add" });
             }
         }
 
         const setWs = () => {
-            ws = getWebSocketById(props.chat.pk);
+            ws = getWebSocketById(chatId.value);
             console.log("WebSocket connection updated");
             if (ws) {
-                messages.value = props.chat.messages;
+                messages.value = chat?.value?.messages;
                 console.log("WebSocket connection established");
 
                 ws.onmessage = function(e) {
@@ -57,22 +59,22 @@ export default {
                         if (messages.value.length >= 1) {
                             message = messages.value[messages.value.length - 1]
                         } 
-                        store.commit('updateNotifications', { chatId: props.chat.pk, status: "del" });
-                        store.commit('updateLastMessage', {chatId: props.chat.pk,
+                        store.commit('updateNotifications', { chatId: chatId.value, status: "del" });
+                        store.commit('updateLastMessage', {chatId: chatId.value,
                             message: message})
 
                     } else if (data.edited_message) {
                         const index = messages.value.findIndex(m => m.id === data.edited_message.id);
                         messages.value[index].text_content = data.edited_message.text_content
                         if (index === messages.value.length - 1) {
-                            store.commit('updateLastMessage', {chatId: props.chat.pk,
+                            store.commit('updateLastMessage', {chatId: chatId.value,
                             message: data.edited_message})
                         }
                     } else if (data.new_users) {
                         console.log(data.new_users)
                     } else if (data.deleted_user) {
                         console.log(data.deleted_user)
-                        store.dispatch('deleteUser', {user: data.deleted_user});
+                        store.dispatch('deleteUser', {user: data.deleted_user, chatId: chatId.value});
                     } else if (data.deleted_chat) {
                         console.log(data.deleted_chat)
                     } else if (data.leaved_user) {
@@ -92,12 +94,14 @@ export default {
             }
         }
 
-        watch(() => (props.chat), () => {
+        watch(() => (props.chatId), (newId) => {
+            chatId.value = newId
             setWs();
-        });
+        }, {immediate: true});
     
 
         const addMessage = () => {
+            console.log(ws)
             ws.send(
                 JSON.stringify({
                     message: formData.value.message,
@@ -113,7 +117,7 @@ export default {
                     message_type: 'chat.edit_message',
                     message_id: editingMessage.value.id,
                     message_text: formData.value.message,
-                    chat: props.chat.pk
+                    chat: chat.value.pk
                 })
             )
         }

@@ -9,19 +9,17 @@ export default {
         groupSettings: {
             require: true
         },
-        chat: {
-            type: Object,
+        chatId: {
+            type: Number,
             required: true
         }
     },
     setup(props) {
         const showUpload = ref(false)
         const store = useStore();
-
-        const chatData = computed(() => {
-            const chat = store.getters.getChat(props.chat.pk);
-            return chat || {};
-        });
+        
+        const chatId = ref(props.chatId);
+        const chatData = computed(() => store.getters.getChat(chatId.value));
 
         const avatarWatch = watch(
             () => chatData.value.groupSettings ? chatData.value.groupSettings.avatar : null,
@@ -42,7 +40,7 @@ export default {
             const {asyncCall} = changeGroupSettings();
             const {newData} = await asyncCall({avatar: formData.value.avatar,
                                                groupSettings: parseInt(props.groupSettings.id)})
-            store.commit('updateGroupAvatar', {chatId: props.chat.pk, avatar: newData.value.avatar})
+            store.commit('updateGroupAvatar', {chatId: chatId.value, avatar: newData.value.avatar})
 
         }
 
@@ -50,7 +48,7 @@ export default {
             const {asyncCall} = changeGroupSettings();
             const {newData} = await asyncCall({title: formData.value.title,
                                                groupSettings: parseInt(props.groupSettings.id)})
-            store.commit('updateGroupTitle', {chatId: props.chat.pk, title: newData.value.title})
+            store.commit('updateGroupTitle', {chatId: chatId.value, title: newData.value.title})
         }
         
         const handleImageChange = (event) => {
@@ -59,9 +57,9 @@ export default {
         }
 
         onMounted(() => {
-            if (props.chat.groupSettings) {
-                formData.value.title = props.chat.groupSettings.title || '';
-                formData.value.avatar = props.chat.groupSettings.avatar || '';
+            if (chatData.value.groupSettings) {
+                formData.value.title = chatData.value.groupSettings.title || '';
+                formData.value.avatar = chatData.value.groupSettings.avatar || '';
             }
         });
 

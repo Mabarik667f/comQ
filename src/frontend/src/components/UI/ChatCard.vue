@@ -15,7 +15,6 @@ export default {
 
       const chatData = ref({
         chatImg: '',
-        lastMessage: chat.value.last_message
       })
 
 
@@ -24,15 +23,11 @@ export default {
         
       }, {deep: true})
 
+
       if (chat.value.chat_type === 'G') {
           chatData.value.chatImg = chat.value?.groupSettings?.avatar
       } else {
           chatData.value.chatImg = chat.value?.partner?.img;
-      }
-      
-      
-      if (chatData.value.lastMessage.chat === null) {
-        chatData.value.lastMessage.text_content = "Чат создан"
       }
 
     return {chatData}
@@ -53,8 +48,8 @@ export default {
         {{ chat.groupSettings?.title || "Загрузка..." }}
       </span>
       <div class="last-message">
-        <label v-if="chatData.lastMessage.user">{{ chatData.lastMessage.user?.name }}: </label>
-        <p>{{ chatData.lastMessage.text_content }}</p>
+        <label v-if="chat.last_message.user">{{ chat.last_message.user.name }}: </label>
+        <p>{{ chat.last_message.text_content }}</p>
       </div>
     </div>
     <div class="notifications">

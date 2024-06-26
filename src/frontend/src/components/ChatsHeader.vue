@@ -5,19 +5,9 @@ import createGroupChat from "@/hooks/chatHooks/createGroupChat"
 import cleanChatData from "@/hooks/chatHooks/cleanChatData";
 import Multiselect from 'vue-multiselect'
 import ButtonsMenu from "@/components/ChatElements/ButtonsMenu.vue"
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import store from "@/store";
 export default {
-    props: {
-        options: {
-            required: true,
-            default: () => []
-        },
-        userData: {
-            type: Object,
-            required: true
-        }
-    },
     data() {
         return {
             menu: false
@@ -34,15 +24,10 @@ export default {
         }
         
     },
-    setup(props) {
+    setup() {
 
         const privateAddVisible = ref(false)
         const groupAddVisible = ref(false)
-        const userData = ref()
-        
-        watch(() => props.userData, (newData) => {
-            userData.value = newData
-        })
 
         const showPrivateDialog = (event) => {
             privateAddVisible.value = event;
@@ -65,15 +50,17 @@ export default {
         const createPrivateChatHook = async () => {
             const {asyncCall} = createPrivateChat();
             const {chat} = await asyncCall(createPrivateForm.value);
-            await cleanChatData(chat.value, store.getters.getUserName)
+            await cleanChatData(chat.value)
         }
             
 
         const createGroupChatHook = async () => {
             const {asyncCall} = createGroupChat();
             const {chat} = await asyncCall(createGroupForm.value);
-            await cleanChatData(chat.value, store.getters.getUserName)
+            await cleanChatData(chat.value)
         }
+
+        const relatedUsers = store.getters.getRelatedUsers;
 
         return {
             createPrivateForm, 
@@ -85,7 +72,9 @@ export default {
             showPrivateDialog,
             showGroupDialog,
             privateAddVisible,
-            groupAddVisible
+            groupAddVisible,
+
+            relatedUsers
         }
     }    
 }
@@ -141,7 +130,7 @@ export default {
                         <multiselect c v-model="createGroupForm.currentUsers"
                         required
                         placeholder="Кого добавим?" tag-placeholder="Участник" label="name"
-                        track-by="value" :options="options"
+                        track-by="value" :options="relatedUsers"
                         :multiple="true" :taggable="true" @tag="addTag">
                     </multiselect>
                     </div>

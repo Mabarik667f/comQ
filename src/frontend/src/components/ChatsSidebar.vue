@@ -2,9 +2,9 @@
 import ChatsHeader from '@/components/ChatsHeader.vue';
 import ChatCard from '@/components/UI/ChatCard.vue';
 import { useStore } from 'vuex';
-import getUserData from '@/hooks/getUserData';
+import getChatData from "@/hooks/chatHooks/getChatData"
 import cleanChatData from "@/hooks/chatHooks/cleanChatData"
-import { computed, ref, onMounted } from 'vue';
+import { computed, watch } from 'vue';
 import router from '@/router';
 
 
@@ -12,28 +12,22 @@ export default {
     components: {
         ChatsHeader,
         ChatCard,
-        
+    },
+    props: {
+        userData: {
+            type: Object,
+            required: true
+        }
     },
     
-    setup() {
+    setup(props) {
         const store = useStore();
         const chats = computed(() => store.getters.getChats);
-        const userData = ref();
-        const chatsLength = ref(0);
-        
-        // const getUserDataHook = async () => {
-        //     const {asyncCall} = getUserData();
-        //     const {userData: data} = await asyncCall();
-        //     userData.value = data.value;
-        //     chatsLength.value = userData.value.chats.length
-        // }
-        const reloadChats = async () => {
-            const {asyncCall} = getUserData();
-            const {userData: data} = await asyncCall();
-            userData.value = data.value;
-            chatsLength.value = data.value.chats.length
-            for (let chat of data.value.chats) {
-                await cleanChatData(chat, data.value.username)
+
+        const reloadChats = async (newData) => {
+            for (let chat of newData.value.chats) {
+                const {chatData} = await getChatData(chat.pk);
+                await cleanChatData(chatData.value)
             }
         }
 
@@ -41,20 +35,18 @@ export default {
             router.push({ name: 'chat-detail', params: { pk: chat.pk }});
         }
 
-        onMounted(async () => {
-            await reloadChats();
-        });
+        watch(() => (props.userData), async (newData) => {
+            await reloadChats(newData)
+        })
 
-        
-        const { relatedUsers } = store.state.userData;
-        return {chats, selectChat, relatedUsers, userData}
+        return {chats, selectChat}
     },
 }
 </script>
 
 <template>
     <div class="chats">
-        <ChatsHeader :options="relatedUsers" :userData="userData"></ChatsHeader>
+        <ChatsHeader></ChatsHeader>
         <div class="short-chat" v-for="chat in chats" :key="chat">
             <ChatCard :chat="chat" @click="selectChat(chat)"></ChatCard>
         </div>

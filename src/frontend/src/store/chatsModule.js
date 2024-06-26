@@ -7,7 +7,7 @@ export const chatsModule = {
             return state.chats
         },
         getChat: (state) => (pk) => {
-            const chat = state.chats.find(chat => chat.pk === pk);
+            const chat = state.chats.find(chat => chat.pk === parseInt(pk));
             return chat
         }
     },
@@ -17,6 +17,18 @@ export const chatsModule = {
         },
         updateChats(state, {chat}) {
             state.chats.unshift(chat);
+        },
+        updateChatData(state, {chatId, data}) {
+            const chat = state.chats.find(chat => chat.pk === chatId);
+            console.log(state.chats)
+            if (chat) {
+                for (let attr of data) {
+                    console.log(attr)
+                }
+                // chat.value = data;
+                console.log(chat)
+            }
+            console.log(state.chats)
         },
         updateNotifications(state, {chatId, status}) {
             const chat = state.chats.find(chat => chat.pk === chatId);
@@ -56,11 +68,30 @@ export const chatsModule = {
             if (chat && chat.chat_type === 'G') {
                 chat.groupSettings.title = title;
             }
-        }
+        },
+        addRelatedUserInChat(state, {user, chatId}) {
+            console.log(user)
+            const chat = state.chats.find(chat => chat.pk === chatId);
+            console.log(chat)
+        },
+        deleteUserInChat(state, {user, chatId}) {
+            console.log(user)
+            const chat = state.chats.find(chat => chat.pk === chatId);
+            if (chat) {
+                // const current_users = chat.current_users.find(u => u.pk ===)
+            }
+            console.log(chat)
+        },
     },
     actions: {
         initializeChats({commit}, {chats}) {
             commit('setChats', {chats: chats})
+        },
+        addUser({commit}, {user}) {
+            commit('addRelatedUserInChat', {user: user})
+        },
+        deleteUser({commit}, {user, chatId}) {
+            commit('deleteUserInChat', {user: user, chatId: chatId})
         }
     }
 }
