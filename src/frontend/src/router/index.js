@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import Cookies from "js-cookie";
 import HomeView from '../views/HomeView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
@@ -31,11 +32,19 @@ const routes = [
     beforeEnter: authGuard,
     children: [
       {
-        path:'chat/:pk',
+        path: '/chat/:pk',
         name: 'chat-detail',
         component: MainChat,
-        props: true
+        props: true,
+        beforeEnter: (to, from, next) => {
+          if (Cookies.get('chat') == to.params.pk) {
+            next()
+          } else {
+            next('/')
+          }
+        }
       }
+      
     ]
   },
   {

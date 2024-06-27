@@ -1,6 +1,10 @@
+import router from "@/router";
+import Cookies from "js-cookie"
+
 export const chatsModule = {
     state: () => ({
-        chats: []
+        chats: [],
+        hub: new WebSocket(`ws://localhost:8000/ws/hub/?token=${Cookies.get("access")}`)
     }),
     getters: {
         getChats(state) {
@@ -9,6 +13,9 @@ export const chatsModule = {
         getChat: (state) => (pk) => {
             const chat = state.chats.find(chat => chat.pk === parseInt(pk));
             return chat
+        },
+        getHub(state) {
+            return state.hub
         }
     },
     mutations: {
@@ -18,15 +25,16 @@ export const chatsModule = {
         updateChats(state, {chat}) {
             state.chats.unshift(chat);
         },
+        deleteChat(state, {chatId}) {
+            state.chats = state.chats.filter(chat => chat.pk !== chatId);
+            router.push('/')
+        },
         updateChatData(state, {chatId, data}) {
             const chat = state.chats.find(chat => chat.pk === chatId);
-            console.log(state.chats)
             if (chat) {
                 for (let attr of data) {
                     console.log(attr)
                 }
-                // chat.value = data;
-                console.log(chat)
             }
             console.log(state.chats)
         },
@@ -69,28 +77,35 @@ export const chatsModule = {
                 chat.groupSettings.title = title;
             }
         },
-        addRelatedUserInChat(state, {user, chatId}) {
-            console.log(user)
-            const chat = state.chats.find(chat => chat.pk === chatId);
-            console.log(chat)
-        },
-        deleteUserInChat(state, {user, chatId}) {
-            console.log(user)
+        addUserInChat(state, {user, chatId}) {
             const chat = state.chats.find(chat => chat.pk === chatId);
             if (chat) {
-                // const current_users = chat.current_users.find(u => u.pk ===)
+                chat.current_users.push(user);
             }
-            console.log(chat)
+        },
+        deleteUserInChat(state, {user, chatId}) {
+            const chat = state.chats.find(chat => chat.pk === chatId);
+            if (chat) {
+                chat.current_users = chat.current_users.filter(u => u.id !== user.id);
+            }
         },
     },
     actions: {
         initializeChats({commit}, {chats}) {
             commit('setChats', {chats: chats})
         },
-        addUser({commit}, {user}) {
-            commit('addRelatedUserInChat', {user: user})
+        addUser({commit, getters}, {user, chatId, chat}) {
+            commit('addUserInChat', {user: user, chatId: chatId})
+            console.log(getters.getUserName)
+            if (getters.getUserName === user.username) {
+                console.log(1)
+                commit('updateChats', {chat: chat})
+            }
         },
         deleteUser({commit}, {user, chatId}) {
+            commit('deleteUserInChat', {user: user, chatId: chatId})
+        },
+        leaveUser({commit}, {user, chatId}) {
             commit('deleteUserInChat', {user: user, chatId: chatId})
         }
     }

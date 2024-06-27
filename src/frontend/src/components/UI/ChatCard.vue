@@ -29,7 +29,6 @@ export default {
       } else {
           chatData.value.chatImg = chat.value?.partner?.img;
       }
-
     return {chatData}
   }
 }

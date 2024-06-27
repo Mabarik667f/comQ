@@ -6,6 +6,7 @@ import getChatData from "@/hooks/chatHooks/getChatData"
 import cleanChatData from "@/hooks/chatHooks/cleanChatData"
 import { computed, watch } from 'vue';
 import router from '@/router';
+import Cookies from "js-cookie";
 
 
 export default {
@@ -32,6 +33,7 @@ export default {
         }
 
         const selectChat = async (chat) => {
+            Cookies.set('chat', chat.pk);
             router.push({ name: 'chat-detail', params: { pk: chat.pk }});
         }
 

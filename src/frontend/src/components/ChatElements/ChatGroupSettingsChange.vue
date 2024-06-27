@@ -70,6 +70,7 @@ export default {
 
 <template>
     <div class="group-settings">
+
         <div class="image-container">
             <img :src="chatData.groupSettings?.avatar || ''" class="image-content">
             <div v-if="isAdmin()" class="wrapper">
