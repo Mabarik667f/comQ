@@ -7,7 +7,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Auth
 from rest_framework_simplejwt.tokens import Token, RefreshToken
 
 from .models import *
-from chats.serializers import ChatCardSerializer, GroupSettingsHasUserSerializer
+from chats.serializers import ChatSerializer, GroupSettingsHasUserSerializer
 
 from .services import ProfileService
 from chats.models import GroupSettingsHasUser, UserToChat, Chat, GroupSettings
@@ -67,7 +67,7 @@ class UserDataSerializer(serializers.ModelSerializer):
 
     def get_chats(self, obj: CustomUser):
         chats = Chat.objects.filter(current_users=obj)
-        return ChatCardSerializer(chats, many=True, context={'user': obj}).data
+        return ChatSerializer(chats, many=True, context={'user': obj}).data
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
