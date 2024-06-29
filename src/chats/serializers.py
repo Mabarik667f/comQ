@@ -12,8 +12,6 @@ from .services import GroupChatService, PrivateChatService, GroupSettingsService
 
 logger = logging.getLogger("chats")
 
-"""Вынос логики во views и services"""
-
 
 class MessageSerializer(serializers.ModelSerializer):
     created_at_formatted = serializers.SerializerMethodField()
@@ -48,44 +46,16 @@ class MessageSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ChatCardSerializer(serializers.ModelSerializer):
-    """Отрисовка чатов в sidebar-е"""
-    last_message = serializers.SerializerMethodField()
-    current_users = serializers.SerializerMethodField()
-    notifications = serializers.SerializerMethodField()
-    host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
-
-    class Meta:
-        model = Chat
-        fields = ('chat_type', 'host', 'current_users', 'last_message', 'pk', 'notifications')
-
-    def get_last_message(self, obj: Chat):
-        return MessageSerializer(obj.messages.order_by('created_at').last()).data
-
-    def get_current_users(self, obj: Chat):
-        from users.serializers import UserDataOnChatSerializer
-        return UserDataOnChatSerializer(obj.current_users.all(), many=True).data
-
-    def get_notifications(self, obj: Chat):
-        user = self.context.get('user', None)
-        if user is None:
-            return None
-        try:
-            user_to_chat = UserToChat.objects.get(chat_id=obj.pk, user_id=user.pk)
-            return user_to_chat.count_notifications
-        except UserToChat.DoesNotExist:
-            return None
-
-
 class ChatSerializer(serializers.ModelSerializer):
     last_message = serializers.SerializerMethodField()
     messages = MessageSerializer(many=True, read_only=True)
     current_users = serializers.SerializerMethodField()
+    notifications = serializers.SerializerMethodField()
     host = PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
 
     class Meta:
         model = Chat
-        fields = ('messages', 'chat_type', 'host', 'current_users', 'pk', 'last_message')
+        fields = ('messages', 'chat_type', 'host', 'current_users', 'pk', 'last_message', "notifications")
 
     def create(self, validated_data):
         raise NotImplementedError()
@@ -97,6 +67,16 @@ class ChatSerializer(serializers.ModelSerializer):
 
     def get_last_message(self, obj: Chat):
         return MessageSerializer(obj.messages.order_by('created_at').last()).data
+
+    def get_notifications(self, obj: Chat):
+        user = self.context.get('user', None)
+        if user is None:
+            return None
+        try:
+            user_to_chat = UserToChat.objects.get(chat_id=obj.pk, user_id=user.pk)
+            return user_to_chat.count_notifications
+        except UserToChat.DoesNotExist:
+            return None
 
 
 class GroupChatSerializer(ChatSerializer):
@@ -110,7 +90,7 @@ class GroupChatSerializer(ChatSerializer):
 
     class Meta(ChatSerializer.Meta):
         depth = 1
-        fields = ChatSerializer.Meta.fields + ('group_settings', 'last_message')
+        fields = ChatSerializer.Meta.fields + ('group_settings', 'last_message', 'current_users')
         extra_kwargs = {
             'chat_type': {'required': False},
         }
@@ -127,6 +107,13 @@ class GroupChatSerializer(ChatSerializer):
 
     def get_last_message(self, obj: Chat):
         return MessageSerializer(obj.messages.order_by('created_at').last()).data
+
+    def to_representation(self, instance):
+        from users.serializers import UserDataOnChatSerializer
+        res = super().to_representation(instance)
+        res['current_users'] = UserDataOnChatSerializer(instance.current_users.all(), many=True,
+                                        context={'chat': instance}).data
+        return res
 
 
 class PrivateChatSerializer(ChatSerializer):
