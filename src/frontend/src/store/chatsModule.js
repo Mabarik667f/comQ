@@ -44,6 +44,11 @@ export const chatsModule = {
         updateChats(state, {chat}) {
             state.chats.unshift(chat);
         },
+
+        clearNotifications(state, {chatId}) {
+            const chat = state.chats.find(chat => chat.pk === chatId);
+            chat.notifications = 0
+        },
         
         addMessage(state, {chatId, message}) {
             const chat = state.chats.find(chat => chat.pk === chatId);
@@ -165,7 +170,7 @@ export const chatsModule = {
         deleteMessage({state, commit}, {chatId, message}) {
 
             const chat = state.chats.find(chat => chat.pk === chatId);
-            const index = chat.messages.findIndex(m => m.id === message);
+            const index = chat.messages.findIndex(m => m.id === message.id);
             if (index === chat.messages.length - 1) {
                 let messageVal;
                 if (index - 1 >= 0) {

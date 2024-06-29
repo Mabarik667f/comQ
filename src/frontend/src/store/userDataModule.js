@@ -3,7 +3,8 @@ export const userDataModule = {
         username: '',
         id: '',
         relatedUsers: [],
-        currentChatRole: 'D'
+        currentChatRole: 'D',
+        isOnline: false
     }),
 
     getters: {

@@ -41,16 +41,22 @@ export default {
                     const data = JSON.parse(e.data);
                     console.log(data)
                     if (data.message) {
-                        createMessage(data.message, id)                        
+                        createMessage(data.message, id)  
                     } else if (data.deleted_message) {
                         store.dispatch('deleteMessage', {chatId: id, message: data.deleted_message})
-                        store.commit('updateNotifications', { chatId: id, status: "del" });
+
+                        if (data.deleted_message.user.username !== store.getters.getUserName
+                        && data.delete_author.username !== store.getters.getUserName) {
+                            store.commit('updateNotifications', { chatId: id, status: "del" });
+                        }                           
                     } else if (data.edited_message) {
                         store.dispatch('editMessage', {chatId: id, message: data.edited_message})
                     } else if (data.deleted_chat) {
                         console.log(data.deleted_chat)
                         store.commit('deleteChat', {chatId: id})
-                    } 
+                    } else if (data.clear_notifications) {
+                        store.commit('clearNotifications', {chatId: id})
+                    }
                 };
 
                 ws.onclose = function(e) {
@@ -59,9 +65,7 @@ export default {
 
                 ws.onerror = function(e) {
                     console.error("WebSocket error:", e);
-                };
-            
-            
+                };            
         }
 
         const selectChat = async (chat) => {
@@ -74,12 +78,10 @@ export default {
         })
 
         watch(() => (userData.value), async () => {
-            console.log("update")
             await reloadChats(userData.value.chats)
         })
 
         watch(() => (chats.value), async () => {
-            console.log(chats.value)
             if (userData.value.chats.length < chats.value.length) {
                 await reloadChats(chats.value)
             }

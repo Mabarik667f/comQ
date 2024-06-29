@@ -47,11 +47,14 @@ class ConsumersMethods:
         return await self.get_serialized_data(ChatSerializer, chat_data)
 
     @database_sync_to_async
-    def update_notifications(self, chat_pk):
+    def update_notifications(self, chat_pk, delete=False):
         user_to_chat = UserToChat.objects.filter(chat_id=chat_pk, user_id=self.user)
         if user_to_chat.exists():
             user_to_chat = user_to_chat[0]
-            user_to_chat.count_notifications = user_to_chat.count_notifications + 1
+            if not delete:
+                user_to_chat.count_notifications = user_to_chat.count_notifications + 1
+            else:
+                user_to_chat.count_notifications = user_to_chat.count_notifications - 1
             user_to_chat.save()
 
     async def get_group_service(self, chat_pk):
@@ -249,10 +252,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     def get_group_settings(self):
         return get_object_or_404(GroupSettings, chat=Chat.objects.get(pk=self.chat_pk))
 
-    @staticmethod
-    async def delete_message(message_id):
+    async def delete_message(self, message_id):
         message = await database_sync_to_async(Message.objects.get)(pk=message_id)
         await database_sync_to_async(message.delete)()
+        return await self.methods.get_serialized_data(MessageSerializer, message)
 
     async def edit_message(self, message_id, message_text, chat):
         message = await database_sync_to_async(Message.objects.get)(pk=message_id)
@@ -264,6 +267,14 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def delete_chat(self):
         service: GroupChatService = await self.methods.get_group_service(self.chat_pk)
         await service.delete_group()
+
+    @database_sync_to_async
+    def clear_notifications(self):
+        user_to_chat = UserToChat.objects.filter(chat_id=self.chat_pk, user_id=self.scope['user'].pk)
+        if user_to_chat.exists():
+            user_to_chat = user_to_chat[0]
+            user_to_chat.count_notifications = 0
+            user_to_chat.save()
 
     async def disconnect(self, close_code):
         """Disconect to ws"""
@@ -280,6 +291,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_edit_message(content)
         elif message_type == 'chat.delete_chat':
             await self.handle_delete_chat()
+        elif message_type == 'chat.clear_notifications':
+            await self.handle_clear_notifications()
         else:
             logger.exception("Нет такого метода в ws!")
             raise ValueError("Нет такого метода в ws!")
@@ -293,10 +306,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def handle_delete_message(self, content):
-        await self.delete_message(message_id=content.get("message_id"))
+        deleted_message = await self.delete_message(message_id=content.get("message_id"))
+        delete_author = await self.methods.get_serialized_data(UserDataOnChatSerializer, self.scope['user'])
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.delete_message",
-                              "message": content.get("message_id")}
+                              "message": deleted_message,
+                              "delete_author": delete_author}
         )
 
     async def handle_edit_message(self, content):
@@ -314,19 +329,33 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             self.chat_group, {"type": "chat.deleted_chat", }
         )
 
+    async def handle_clear_notifications(self):
+        await self.clear_notifications()
+
+        await self.channel_layer.send(
+            self.channel_name, {"type": "chat.clear_notifications"}
+        )
+
     async def chat_message(self, event):
         if self.scope['user'].pk != int(event['message']['user']['id']):
             await self.methods.update_notifications(chat_pk=self.chat_pk)
         await self.send_json({"message": event['message']})
 
     async def chat_delete_message(self, event):
-        await self.send_json({"deleted_message": event['message']})
+        if self.scope['user'].pk != int(event['message']['user']['id'])\
+                and self.scope['user'].pk != int(event['delete_author']['id']):
+            await self.methods.update_notifications(chat_pk=self.chat_pk, delete=True)
+        await self.send_json({"deleted_message": event['message'],
+                              "delete_author": event['delete_author']})
 
     async def chat_edit_message(self, event):
         await self.send_json({"edited_message": event['message']})
 
     async def chat_deleted_chat(self, event):
         await self.send_json({"deleted_chat": True})
+
+    async def chat_clear_notifications(self, event):
+        await self.send_json({"clear_notifications": True})
 
     async def force_disconnect(self, event):
         if event['method'] == 'leave':

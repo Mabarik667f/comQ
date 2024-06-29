@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import refresh from "@/hooks/refresh"
 import Cookies from "js-cookie";
 import HomeView from '../views/HomeView.vue'
 import RegisterView from '@/views/RegisterView.vue'
@@ -65,6 +66,10 @@ const routes = [
     name: 'profile',
     component: ProfileView,
     beforeEnter: authGuard
+  },
+  {
+    path: '/:pathMatch(.*)',
+    redirect: "/"
   }
 ]
 
@@ -77,6 +82,9 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   
   store.dispatch('setIsAuth').then(() => {
+    setInterval(() => {
+      refresh();
+    }, 14 * 60 * 1000); 
     next();
   });
 })

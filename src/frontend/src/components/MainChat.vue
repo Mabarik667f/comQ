@@ -61,7 +61,7 @@ export default {
             if (chat.value) {
                 fetchData();
             }
-        })
+        }, {deep: true})
 
         const deleteUserToRoomHook = (event) => {
             child.value.deleteUserToRoom(event.username)
@@ -77,6 +77,7 @@ export default {
 
         const addUserToRommHook = () => {
             child.value.addUserToRoom(addedUsers.value)
+            addedUsers.value = []
         }
 
         const changeRoleHook = async (event) => {
@@ -142,7 +143,7 @@ export default {
                     track-by="value" :options="relatedUsersInGroup"
                     :multiple="true" :taggable="true" @tag="addTag">
                 </multiselect>
-                    <com-button @click=addUserToRommHook()>Добавить</com-button>
+                    <com-button v-if="addedUsers.length > 0" @click=addUserToRommHook()>Добавить</com-button>
                 </div>
                 <div v-for="user in chat?.current_users" :key="user">
                     <UserCard :user="user" :chatId="parseInt(chatId)" 

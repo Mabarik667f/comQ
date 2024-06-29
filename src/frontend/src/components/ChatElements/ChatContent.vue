@@ -32,9 +32,32 @@ export default {
         const ws = computed(() => store.getters.getWebSocketById(chatId.value));
         const hub = computed(() => store.getters.getHub)
         
+        const clearNotifications = () => {
+            if (ws.value.readyState === WebSocket.OPEN) {
+                ws.value.send(
+                    JSON.stringify({
+                        message_type: 'chat.clear_notifications',
+                    })
+                );
+            } else {
+                // once - выполняем только один раз и удаляем обработчик
+                ws.value.addEventListener('open', () => {
+                    ws.value.send(
+                        JSON.stringify({
+                            message_type: 'chat.clear_notifications',
+                        })
+                    );
+                }, { once: true });
+            }
+        }
+
         watch(() => (props.chatId), (newId) => {
             chatId.value = newId
         }, {immediate: true});
+
+        watch(() => (ws.value), () => {
+            clearNotifications()
+        })
 
         const addMessage = () => {
             if (!ws.value) {
@@ -132,6 +155,15 @@ export default {
             replyMessage.value = {};
         }
 
+        const handleEnter = () => {
+            if (formData.value.message) {
+                if (editingMessage.value.text_content) {
+                    editMessage();
+                } else {
+                    addMessage();
+                }
+            }
+        };
 
         return {
                 chat, 
@@ -152,7 +184,8 @@ export default {
                 replyMessage,
                 cancelReply,
 
-            formData};
+                formData,
+                handleEnter};
     }
 };
 </script>
@@ -167,9 +200,6 @@ export default {
              @replyToMessage="setReply"></ChatMessage>
         </div>
         <div class="input-group new-message">
-            <div class="input-group-prepend">
-                <com-button class="btn-attachment">&#128206;</com-button>
-            </div>
             <div v-if="editingMessage.text_content">
                 <div>{{ editingMessage.text_content }}</div>
                 <com-button @click="cancelEditMessage">&#x2717;</com-button>
@@ -178,9 +208,10 @@ export default {
                 <div>{{ replyMessage.text_content }}</div>
                 <com-button @click="cancelReply">&#x2717;</com-button>
             </div>
-            <com-input class="form-control" v-model="formData.message"></com-input>
-            <div class="input-group-append">
-                <com-button class="btn-send" @click="editingMessage.text_content ? editMessage() : addMessage()">&#9658;</com-button>
+            <com-input class="form-control" v-model="formData.message"
+            @keydown.enter="handleEnter"></com-input>
+            <div class="input-group-append" v-if="formData.message">
+                <com-button class="btn-send" @click="handleEnter()">&#9658;</com-button>
             </div>
         </div>
     </div>
