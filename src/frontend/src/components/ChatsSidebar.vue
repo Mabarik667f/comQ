@@ -4,7 +4,8 @@ import ChatCard from '@/components/UI/ChatCard.vue';
 import { useStore } from 'vuex';
 import getChatData from "@/hooks/chatHooks/getChatData"
 import cleanChatData from "@/hooks/chatHooks/cleanChatData"
-import { computed, watch } from 'vue';
+import createMessage from '@/hooks/chatHooks/createMessage';
+import { ref, computed, watch } from 'vue';
 import router from '@/router';
 import Cookies from "js-cookie";
 
@@ -24,12 +25,43 @@ export default {
     setup(props) {
         const store = useStore();
         const chats = computed(() => store.getters.getChats);
+        const websockets = computed(() => store.getters.getWebSockets)
+        const userData = ref(props.userData)
 
-        const reloadChats = async (newData) => {
-            for (let chat of newData.value.chats) {
+        const reloadChats = async (chats) => {
+            for (const chat of chats) {
                 const {chatData} = await getChatData(chat.pk);
                 await cleanChatData(chatData.value)
             }
+        }
+
+        const websocketInit = (ws, id) => {
+            
+                ws.onmessage = function(e) {
+                    const data = JSON.parse(e.data);
+                    console.log(data)
+                    if (data.message) {
+                        createMessage(data.message, id)                        
+                    } else if (data.deleted_message) {
+                        store.dispatch('deleteMessage', {chatId: id, message: data.deleted_message})
+                        store.commit('updateNotifications', { chatId: id, status: "del" });
+                    } else if (data.edited_message) {
+                        store.dispatch('editMessage', {chatId: id, message: data.edited_message})
+                    } else if (data.deleted_chat) {
+                        console.log(data.deleted_chat)
+                        store.commit('deleteChat', {chatId: id})
+                    } 
+                };
+
+                ws.onclose = function(e) {
+                    console.log("WebSocket connection closed:", e);
+                };
+
+                ws.onerror = function(e) {
+                    console.error("WebSocket error:", e);
+                };
+            
+            
         }
 
         const selectChat = async (chat) => {
@@ -38,8 +70,29 @@ export default {
         }
 
         watch(() => (props.userData), async (newData) => {
-            await reloadChats(newData)
+            userData.value = newData.value
         })
+
+        watch(() => (userData.value), async () => {
+            console.log("update")
+            await reloadChats(userData.value.chats)
+        })
+
+        watch(() => (chats.value), async () => {
+            console.log(chats.value)
+            if (userData.value.chats.length < chats.value.length) {
+                await reloadChats(chats.value)
+            }
+        }, {deep: true})
+
+        watch(() => (websockets.value), () => {
+            for (const id in websockets.value) {
+                const ws = websockets.value[id];
+                if (ws && !ws.onmessage) {
+                    websocketInit(ws, parseInt(id));
+                }
+            }
+        }, { deep: true });
 
         return {chats, selectChat}
     },

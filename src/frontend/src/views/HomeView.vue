@@ -12,7 +12,7 @@ import ChatsSidebar from "@/components/ChatsSidebar";
 import getUserData from "@/hooks/getUserData";
 import getRelatedUsers from "@/hooks/getRelatedUsers"
 import { useStore } from "vuex";
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 export default {
   name: 'HomeView',
   components: {
@@ -21,7 +21,7 @@ export default {
 
   methods: {
     ...mapActions({
-            logout: 'logout'
+        logout: 'logout'
     }),
   },
 
@@ -42,8 +42,37 @@ export default {
       relatedUsers.value[0].users.forEach(user => {
         store.dispatch('addRelatedUser', {user: {value: user.username, name: user.name}})
       })
-    };
-    
+
+    };  
+
+    const hub = computed(() => store.getters.getHub)
+
+    hub.value.onmessage = function(e) {
+        const data = JSON.parse(e.data)
+
+        console.log(data)
+        const chatId = ref(data.chat.pk)
+        if (data.new_users) {
+            console.log(data.new_users)
+            for (const user of data.new_users) {
+                store.dispatch('addUser', {user: user, chatId: chatId.value, chat: data.chat})
+            }
+        } else if (data.deleted_user) {
+            console.log(data.deleted_user)
+            store.dispatch('deleteUser', {user: data.deleted_user, chatId: chatId.value});
+            if (store.getters.getUserName === data.deleted_user.username) {
+                store.commit('deleteChat', {chatId: chatId.value})
+            }
+        } else if (data.leaved_user) {
+            console.log(data.leaved_user)
+            store.dispatch('deleteUser', {user: data.leaved_user, chatId: chatId.value});
+            if (store.getters.getUserName === data.leaved_user.username) {
+                store.commit('deleteChat', {chatId: chatId.value})
+            }
+        } 
+
+    }
+
     onMounted(async () => {
       fetchUserData();
     });

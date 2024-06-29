@@ -77,7 +77,6 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   
   store.dispatch('setIsAuth').then(() => {
-    store.dispatch('getChatDataCookies')
     next();
   });
 })

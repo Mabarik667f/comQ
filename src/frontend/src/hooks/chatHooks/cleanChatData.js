@@ -1,4 +1,3 @@
-import { addWebSocket, getWebSocketById } from '@/hooks/wsHooks/websockets';
 import Cookies from 'js-cookie';
 import getUserDataOnChat from '@/hooks/getUserDataOnChat';
 import groupChatDetail from '@/hooks/chatHooks/groupChatDetail';
@@ -24,9 +23,11 @@ export default async function cleanChatData(chat) {
         const {chatData: groupSettings} = await groupChatDetail(chat.pk);
         chat.groupSettings = groupSettings.value.group_settings;
     }
-    if (!getWebSocketById(chat.pk)) {
+
+    if (!store.getters.getWebSocketById(chat.pk) && !store.getters.getChat(chat.pk)) {
+        console.log(chat)
         const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`);
-        addWebSocket(chat.pk, ws);
+        store.commit('updateWebsockets', {id: chat.pk, ws: ws});
         store.commit('updateChats', {chat: chat})
     }
     

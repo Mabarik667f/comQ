@@ -11,7 +11,6 @@ import { useStore } from 'vuex';
 
 import isAdmin from "@/hooks/permissionHooks/isAdmin"
 import isOwner from "@/hooks/permissionHooks/isOwner"
-
 import changeRole from "@/hooks/chatHooks/changeRole"
 export default {
     components: {
@@ -31,6 +30,7 @@ export default {
             this.settingsVisible = true;
         }
     },
+    
     setup() {
         const route = useRoute();
         const store = useStore();
@@ -48,17 +48,19 @@ export default {
                 relatedUsersInGroup.value = relatedUsers.value.filter(u => !chat.value.current_users.some(
                     currentUser => currentUser.username === u.value)
                 )
-                const currentUser = chat.value.current_users.filter(u => u.username === store.getters.getUserName)[0]
-                store.commit('setUserRole', {role: currentUser.group_settings_has_user.role});
+                const currentUser = chat.value.current_users.filter(u => u.username === store.getters.getUserName)
+                store.commit('setUserRole', {role: currentUser[0].group_settings_has_user.role});
             }
         }
 
         watch(() => route.params.pk, (newChatId) => {
             chatId.value = parseInt(newChatId);
-        }, {deep: true, immediate: true})
+        }, {deep: true})
 
         watch(() => (chat.value), () => {
-            fetchData();
+            if (chat.value) {
+                fetchData();
+            }
         })
 
         const deleteUserToRoomHook = (event) => {
@@ -83,12 +85,25 @@ export default {
         }
 
         const child = ref(null);
+
+        const popupTriggers = ref({
+            buttonTrigger: false
+        })
+
+        const togglePopup = (trigger) => {
+            popupTriggers.value[trigger] = !popupTriggers.value[trigger]
+        }
+
+        
         return {chat,
                 chatId,
                 child,
                 relatedUsersInGroup,
                 addedUsers,
                 store,
+
+                popupTriggers,
+                togglePopup,
 
                 deleteUserToRoomHook,
                 leaveUserToRoomHook,
@@ -104,15 +119,20 @@ export default {
 
 <template>
     <div class="chat">
+        <com-popup 
+            v-if="popupTriggers.buttonTrigger" 
+            :togglePopup="() => togglePopup('buttonTrigger')">
+            <com-button @click="deleteRoomHook()" v-if="isOwner()">Удалить группу</com-button>
+        </com-popup>
 
         <ChatHeader @click="showSettings()" :chatId="parseInt(chatId)"></ChatHeader>
         <com-dialog v-model:show="settingsVisible" class="chat-settings">
             
-            <ChatGroupSettingsChange v-if="chat && chat.chat_type === 'G'"
+            <ChatGroupSettingsChange v-if="chat && chat?.chat_type === 'G'"
             :groupSettings="chat?.groupSettings" :chatId="parseInt(chatId)"></ChatGroupSettingsChange>
             <h2>Информация</h2>
 
-            <com-button @click="deleteRoomHook()" v-if="isOwner()">Удалить группу</com-button>
+            <com-button @click="togglePopup('buttonTrigger')" v-if="isOwner()">Удалить группу</com-button>
             <div v-if="chat && chat.chat_type === 'G'">
                 <div class="add-users" v-if="isAdmin()">
                     <label class="typo__label">Tagging</label>
@@ -125,7 +145,7 @@ export default {
                     <com-button @click=addUserToRommHook()>Добавить</com-button>
                 </div>
                 <div v-for="user in chat?.current_users" :key="user">
-                    <UserCard :user="user" :chat="chat" 
+                    <UserCard :user="user" :chatId="parseInt(chatId)" 
                     @leaveUser="leaveUserToRoomHook" 
                     @changeRole="changeRoleHook"
                     @deleteUser="deleteUserToRoomHook">
