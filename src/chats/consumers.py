@@ -307,6 +307,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def handle_delete_message(self, content):
         deleted_message = await self.delete_message(message_id=content.get("message_id"))
+        deleted_message['id'] = content.get("message_id")
         delete_author = await self.methods.get_serialized_data(UserDataOnChatSerializer, self.scope['user'])
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.delete_message",
