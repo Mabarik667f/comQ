@@ -42,7 +42,7 @@ export default {
                     console.log(data)
                     if (data.message) {
                         createMessage(data.message, id)  
-                    } else if (data.deleted_message) {
+                    } else if (data.deleted_message && data.delete_author) {
                         store.dispatch('deleteMessage', {chatId: id, message: data.deleted_message})
 
                         if (data.deleted_message.user.username !== store.getters.getUserName
@@ -104,13 +104,25 @@ export default {
 <template>
     <div class="chats">
         <ChatsHeader></ChatsHeader>
+        <transition-group name="slide-fade" tag="div">
         <div class="short-chat" v-for="chat in chats" :key="chat">
             <ChatCard :chat="chat" @click="selectChat(chat)"></ChatCard>
         </div>
+        </transition-group>
     </div>
 </template>
 
 <style scoped>
+
+.slide-fade-enter-active, .slide-fade-leave-active {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.slide-fade-enter-from, .slide-fade-leave-to {
+    transform: translateY(20px);
+    opacity: 0;
+}
+
 .chats {
     background-color: black;
     height: 100vh;

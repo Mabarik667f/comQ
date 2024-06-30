@@ -43,11 +43,13 @@ export default {
 </script>
 
 <template>
+    <transition-group name="context-fade">
     <ul class="menu" v-if="show" @click.self="hideDialog">
         <li v-for="action in actions" :key="action.name" class="menu-item" @click="handleClick(action)">
             {{ action.name }}
         </li>
     </ul>
+    </transition-group>
 </template>
 
 <style scoped>
@@ -74,5 +76,15 @@ export default {
 
 .menu-item:hover {
     background-color: #f5f5f5;
+}
+
+.context-fade-enter-active, 
+.context-fade-leave-active {
+    transition: opacity 0.5s;
+}
+
+.context-fade-enter-from,
+.context-fade-leave-to {
+    opacity: 0;
 }
 </style>

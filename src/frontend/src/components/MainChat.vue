@@ -43,7 +43,6 @@ export default {
         const relatedUsers = computed(() => store.getters.getRelatedUsers);
 
         const fetchData = async () => {
-            
             if (chat.value.chat_type === 'G') {
                 relatedUsersInGroup.value = relatedUsers.value.filter(u => !chat.value.current_users.some(
                     currentUser => currentUser.username === u.value)
@@ -57,8 +56,8 @@ export default {
             chatId.value = parseInt(newChatId);
         }, {deep: true})
 
-        watch(() => (chat.value), () => {
-            if (chat.value) {
+        watch(() => (chat.value?.current_users), () => {
+            if (chat?.value) {
                 fetchData();
             }
         }, {deep: true})
@@ -120,11 +119,13 @@ export default {
 
 <template>
     <div class="chat">
-        <com-popup 
-            v-if="popupTriggers.buttonTrigger" 
-            :togglePopup="() => togglePopup('buttonTrigger')">
-            <com-button @click="deleteRoomHook()" v-if="isOwner()">Удалить группу</com-button>
-        </com-popup>
+        <transition name="popup-fade">
+            <com-popup 
+                v-if="popupTriggers.buttonTrigger" 
+                :togglePopup="() => togglePopup('buttonTrigger')">
+                <com-button @click="deleteRoomHook()" v-if="isOwner()">Удалить группу</com-button>
+            </com-popup>
+        </transition>
 
         <ChatHeader @click="showSettings()" :chatId="parseInt(chatId)"></ChatHeader>
         <com-dialog v-model:show="settingsVisible" class="chat-settings">
@@ -167,6 +168,14 @@ export default {
 
 .chat-settings {
     border: 1px blue solid;
+    background-color: rgb(41, 39, 38);
     
+}
+
+.popup-fade-enter-active, .popup-fade-leave-active {
+    transition: opacity 0.5s;
+}
+.popup-fade-enter-from, .popup-fade-leave-to {
+    opacity: 0;
 }
 </style>

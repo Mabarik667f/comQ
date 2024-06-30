@@ -57,7 +57,9 @@ export const chatsModule = {
 
         deleteMessage(state, {chatId, index}) {
             const chat = state.chats.find(chat => chat.pk === chatId);
+            console.log(index)
             chat.messages.splice(index, 1);
+            console.log(1)
         },
         editMessage(state, {chatId, message}) {
             const chat = state.chats.find(chat => chat.pk === chatId);
@@ -66,21 +68,9 @@ export const chatsModule = {
         },
 
         deleteChat(state, {chatId}) {
-            console.log(chatId)
-            console.log(state.chats.filter(chat => chat.pk !== chatId))
             state.chats = state.chats.filter(chat => chat.pk !== chatId);
             delete state.websockets[chatId]
-            console.log(state.websockets)
             router.push('/')
-        },
-
-        updateChatData(state, {chatId, data}) {
-            const chat = state.chats.find(chat => chat.pk === chatId);
-            if (chat) {
-                for (let attr of data) {
-                    console.log(attr)
-                }
-            }
         },
 
         updateNotifications(state, {chatId, status}) {
@@ -134,8 +124,10 @@ export const chatsModule = {
 
         deleteUserInChat(state, {user, chatId}) {
             const chat = state.chats.find(chat => chat.pk === chatId);
+            console.log(chat.current_users)
             if (chat) {
                 chat.current_users = chat.current_users.filter(u => u.id !== user.id);
+                console.log(chat.current_users)
             }
         },
     },

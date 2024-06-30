@@ -35,6 +35,7 @@ export default {
 .popup-inner {
     padding: 32px;
     background: #FFF;
-}
+    border-radius: 20px;
 
+}
 </style>

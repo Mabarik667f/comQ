@@ -40,8 +40,16 @@ export default {
         const deleteUser = () => {
             emit('deleteUser', user.value)
         }
+        
+        const popupTriggers = ref({
+            buttonTrigger: false
+        })
 
-        return {changeRole, leaveUser, deleteUser, store, chat, isAdmin}
+        const togglePopup = (trigger) => {
+            popupTriggers.value[trigger] = !popupTriggers.value[trigger]
+        }
+
+        return {changeRole, leaveUser, deleteUser, store, chat, isAdmin, popupTriggers, togglePopup}
     }
 }
 </script>
@@ -49,8 +57,16 @@ export default {
 <template>
     <div class="user-on-settings">
         {{ user }}
-        <div v-if="user.username == store.state.userData.username">
-            <com-button @click="leaveUser()">Покинуть</com-button>
+        <transition name="popup-fade">
+            <com-popup 
+                v-if="popupTriggers.buttonTrigger" 
+                :togglePopup="() => togglePopup('buttonTrigger')">
+                <com-button @click="leaveUser()">Покинуть</com-button>
+            </com-popup>
+        </transition>
+
+        <div v-if="user.username == store.getters.getUserName && store.getters.getUserRole !== 'O'">
+            <com-button @click="togglePopup('buttonTrigger')">Покинуть</com-button>
         </div>
 
         <div v-if="isAdmin() && user.username !== store.getters.getUserName">
@@ -65,5 +81,10 @@ export default {
 </template>
 
 <style scoped>
-
+.popup-fade-enter-active, .popup-fade-leave-active {
+    transition: opacity 0.5s;
+}
+.popup-fade-enter-from, .popup-fade-leave-to {
+    opacity: 0;
+}
 </style>
