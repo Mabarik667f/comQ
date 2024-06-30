@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useStore } from 'vuex';
 export default {
-    emits: ['delete-message', 'edit-message', 'replyToMessage'],
+    emits: ['delete-message', 'edit-message', 'replyToMessage', 'showContextMenu'],
     props: {
         message: {
             require: true,
@@ -22,14 +22,6 @@ export default {
         }
         const deleteMessage = () => {
             emit('delete-message', props.message);
-        }
-
-        const replyToMessage = () => {
-            emit('replyToMessage', props.message)
-        }
-
-        const copyToClipboard = async () => {
-            await navigator.clipboard.writeText(props.message.text_content);
         }
 
         const formattedDate = () => {
@@ -62,54 +54,38 @@ export default {
         const contextMenu = ref(null);
 
         const showContextMenu = (event) => {
-
-            if (contextMenu.value) {
-                contextMenu.value.openMenu(event);
-            }
+            emit("showContextMenu", event, props.message)
         };
 
-        const actions = ref([
-            {"name": "Ответить", "event": replyToMessage},
-            {"name": "Копировать текст", "event": copyToClipboard}
-        ])
-        
-        // можно ли удалять
-        if ((props.message.user.username == store.getters.getUserName ||
-        ('A', 'O').includes(store.getters.getUserRole)) && !props.message.system) {
-            actions.value.push({"name": "Удалить", "event": () => togglePopup('buttonTrigger')})
-        }
 
-        // можно ли редактировать
-        if (props.message.user.username == store.getters.getUserName && !props.message.system) {
-            actions.value.push({"name": "Редактировать", "event": editMessage})
-        }
-
-
-        return {user, messageDate, currentUserName, togglePopup, popupTriggers,
-             showContextMenu, contextMenu, actions, editMessage, deleteMessage}
+        return {user, store, messageDate, currentUserName, togglePopup, popupTriggers,
+             showContextMenu, contextMenu, editMessage, deleteMessage}
     }
 }
 </script>
 
 <template>
-    <com-popup
-    v-if="popupTriggers.buttonTrigger"
-    :togglePopup="() => togglePopup('buttonTrigger')">
-        <com-button @click="deleteMessage" v-if="!message.system">Удалить</com-button>
-    </com-popup>
+    
     <div :class="{
         'system-message': message.system,
         'left': !message.system && message.user.username !== currentUserName,
         'right': !message.system && message.user.username === currentUserName,
         'message': true
-        }" @contextmenu.prevent="showContextMenu" >
-            <com-context-menu :options="actions" ref="contextMenu" />
-            {{ message.text_content }}
-            {{ message.user.name }}
-            {{ message.reply }}
-        <div class="message-date">
-            {{ messageDate }}
-        </div>
+        }" @contextmenu.prevent="showContextMenu"
+        >
+        <div class="img-wrapper" v-if="!message.system && message.user.username !== store.getters.getUserName">
+                    <img :src="message.user.img" class="user-img">
+                </div>
+                <!-- <com-context-menu :options="actions" ref="contextMenu" /> -->
+            <div class="message-content">
+                <div v-if="!message.system">{{ message.user.name }}</div>
+                <div>{{ message.text_content }}</div>
+                <!-- <div v-if="!message.system">{{ message.reply }}</div> -->
+                <div class="message-date" v-if="!message.system">
+                    {{ messageDate }}
+                </div>
+            </div>
+        
         
     </div>
 
@@ -119,12 +95,21 @@ export default {
 .message {
     border: 1px solid black;
     border-radius: 20px;
-    width: 60%;
+    min-width: 15%;
+    max-width: 50%;
     text-align: left;
     margin: 5px 20px;
+    padding: 5px;
 }
+.message-content {
+    display: flex;
+    flex-direction: column;
+}
+
 .message-date {
     color: gray;
+    font-size: 14px;
+    align-self: flex-end;
 }
 
 .left {
@@ -135,7 +120,17 @@ export default {
     align-self: flex-end;
 }
 
+.img-wrapper {
+    width: 65px;
+}
+.user-img {
+    width: 100%;
+    border-radius: 50%;
+}
+
 .system-message {
     border: 5px blue solid;
+    text-align: center;
+    align-self: center;
 }
 </style>

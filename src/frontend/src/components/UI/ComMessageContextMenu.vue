@@ -49,6 +49,7 @@ export default {
 
 <template>
     <div @contextmenu.prevent="openMenu" class="component-container">
+        <transition name="context-fade">
         <div ref="menuRef" class="context-menu"
             @click.stop="closeMenu"
             v-show="isVisible"
@@ -64,6 +65,7 @@ export default {
                 </ul>
             </div>
         </div>
+        </transition>
     </div>
 </template>
 
@@ -99,5 +101,15 @@ li {
 
 li:hover {
     background: #eee;
+}
+
+.context-fade-enter-active, 
+.context-fade-leave-active {
+    transition: opacity 0.5s;
+}
+
+.context-fade-enter-from,
+.context-fade-leave-to {
+    opacity: 0;
 }
 </style>

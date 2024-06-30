@@ -33,22 +33,25 @@ export default {
         const hub = computed(() => store.getters.getHub)
         
         const clearNotifications = () => {
-            if (ws.value.readyState === WebSocket.OPEN) {
+            if (ws.value) {
+                if (ws.value.readyState === WebSocket.OPEN) {
                 ws.value.send(
                     JSON.stringify({
                         message_type: 'chat.clear_notifications',
                     })
                 );
-            } else {
-                // once - выполняем только один раз и удаляем обработчик
-                ws.value.addEventListener('open', () => {
-                    ws.value.send(
-                        JSON.stringify({
-                            message_type: 'chat.clear_notifications',
-                        })
-                    );
-                }, { once: true });
+                } else {
+                    // once - выполняем только один раз и удаляем обработчик
+                    ws.value.addEventListener('open', () => {
+                        ws.value.send(
+                            JSON.stringify({
+                                message_type: 'chat.clear_notifications',
+                            })
+                        );
+                    }, { once: true });
+                }
             }
+            
         }
 
         watch(() => (props.chatId), (newId) => {
@@ -87,13 +90,15 @@ export default {
             cancelEditMessage()
         }
 
-        const deleteMessage = (message) => {
+        const deleteCandidat = ref(null);
+        const deleteMessage = () => {
             ws.value.send(
                 JSON.stringify({
                     message_type: 'chat.delete_message',
-                    message_id: message.id
+                    message_id: deleteCandidat.value
                 })
             )
+            togglePopup('buttonTrigger')
         }
 
         const deleteRoom = () => {
@@ -102,6 +107,7 @@ export default {
                     message_type: 'chat.delete_chat',
                 })
             )
+            togglePopup('buttonTrigger')
         }
 
         const deleteUserToRoom = (user) => {
@@ -165,40 +171,75 @@ export default {
             }
         };
 
+        const contextMenu = ref(null);
+        const actions = ref([])
+
+        const copyToClipboard = async (message) => {
+            await navigator.clipboard.writeText(message.text_content);
+        }
+
+        const showContextMenu = (event, message) => {
+
+            deleteCandidat.value = message.id
+            actions.value = [
+                {"name": "Ответить", "event": () => setReply(message)},
+                {"name": "Копировать текст", "event": () => copyToClipboard(message)}
+            ]
+            
+            // можно ли удалять
+            if ((message.user.username == store.getters.getUserName ||
+            ('A', 'O').includes(store.getters.getUserRole)) && !message.system) {
+                actions.value.push({"name": "Удалить", "event": () => togglePopup('buttonTrigger')})
+            }
+
+            // можно ли редактировать
+            if (message.user.username == store.getters.getUserName && !message.system) {
+                actions.value.push({"name": "Редактировать", "event": () => setEditMessage(message)})
+            }
+
+            contextMenu.value.openMenu(event)
+        }
+
+        const popupTriggers = ref({
+            buttonTrigger: false
+        })
+
+        const togglePopup = (trigger) => {
+            popupTriggers.value[trigger] = !popupTriggers.value[trigger]
+        }
+
+
         return {
-                chat, 
-                addMessage,
-                editMessage,
-                deleteMessage,
-
-                deleteUserToRoom,
-                deleteRoom,
-                leaveUserToRoom,
-                addUserToRoom,
-
-                setEditMessage,
-                editingMessage,
-                cancelEditMessage,
-
-                setReply,
-                replyMessage,
-                cancelReply,
-
-                formData,
-                handleEnter};
+                chat,
+                actions, contextMenu, showContextMenu,
+                popupTriggers, togglePopup,
+                addMessage, editMessage, deleteMessage,
+                deleteUserToRoom, deleteRoom, leaveUserToRoom, addUserToRoom,
+                setEditMessage, editingMessage, cancelEditMessage,
+                setReply, replyMessage, cancelReply,
+                formData, handleEnter};
     }
 };
 </script>
 
 <template>
     <div class="chat-content">
-        <div class="chat-messages">
-            <ChatMessage v-for="message in chat?.messages"
-             :key="message.id" :message="message"
-             @delete-message="deleteMessage"
-             @edit-message="setEditMessage"
-             @replyToMessage="setReply"></ChatMessage>
-        </div>
+        <transition-group name="message" tag="div" class="chat-messages">
+        <ChatMessage v-for="message in chat?.messages"
+            :key="message.id" :message="message"
+            @showContextMenu="showContextMenu"
+            ></ChatMessage>
+        </transition-group>
+
+            <com-popup
+        v-if="popupTriggers.buttonTrigger"
+        :togglePopup="() => togglePopup('buttonTrigger')">
+            <com-button @click="deleteMessage">Удалить</com-button>
+        </com-popup>
+
+        <transition name="context-fade">
+            <com-context-menu :options="actions" ref="contextMenu" />
+        </transition>
         <div class="input-group new-message">
             <div v-if="editingMessage.text_content">
                 <div>{{ editingMessage.text_content }}</div>
@@ -208,20 +249,47 @@ export default {
                 <div>{{ replyMessage.text_content }}</div>
                 <com-button @click="cancelReply">&#x2717;</com-button>
             </div>
-            <com-input class="form-control" v-model="formData.message"
-            @keydown.enter="handleEnter"></com-input>
-            <div class="input-group-append" v-if="formData.message">
-                <com-button class="btn-send" @click="handleEnter()">&#9658;</com-button>
+            <div class="input-container">
+                <com-input class="form-control" style="border-radius: 0%;" v-model="formData.message"
+                @keydown.enter="handleEnter"></com-input>
+                <transition name="slide-fade">
+                    <div class="input-group-append" v-if="formData.message">
+                        <com-button class="btn-send" @click="handleEnter">&#9658;</com-button>
+                    </div>
+                </transition>
             </div>
+
         </div>
     </div>
 </template>
 
 <style scoped>
+.message-enter-active, .message-leave-active {
+    transition: opacity 0.5s;
+}
+.message-enter-from, .message-leave-to {
+    opacity: 0;
+}
+
+.slide-fade-enter-active, .slide-fade-leave-active {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.slide-fade-enter-from, .slide-fade-leave-to {
+    transform: translateY(20px);
+    opacity: 0;
+}
+
+.input-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
 .chat-content {
     background-color: aquamarine;
     margin: 0 20%;
-    height: 850px;
+    height: 93%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -239,25 +307,32 @@ export default {
     width: 20px;
 }
 
-.new-message {
-    position: absolute;
-    bottom: 0;
-}
-
 .btn-attachment,
 .btn-send {
     border-radius: 0%;
 }
 
+.form-control:focus {
+    border-color: #ccc;
+    box-shadow: none;
+}
 .new-message {
-    position: absolute;
-    bottom: 0;
     width: 100%;
     display: flex;
 }
 
 .input-group {
     width: 100%; 
+}
+
+.context-fade-enter-active, 
+.context-fade-leave-active {
+    transition: opacity 0.5s;
+}
+
+.context-fade-enter-from,
+.context-fade-leave-to {
+    opacity: 0;
 }
 
 </style>
