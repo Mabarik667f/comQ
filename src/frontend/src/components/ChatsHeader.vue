@@ -47,10 +47,21 @@ export default {
             title: ''
         })
 
+        const errors = ref({
+            newPrivateChat: '',
+            newGroupChat: ''
+        })
+
         const createPrivateChatHook = async () => {
             const {asyncCall} = createPrivateChat();
-            const {chat} = await asyncCall(createPrivateForm.value);
-            await cleanChatData(chat.value)
+            const data = await asyncCall(createPrivateForm.value);
+            if (data.error) {
+                console.log(data.error)
+                errors.value.newPrivateChat = data.error[0] || data.error.current_users[0];
+            } else {
+                errors.value.newPrivateChat = '';
+                await cleanChatData(data.value)
+            }
         }
             
 
@@ -74,7 +85,8 @@ export default {
             privateAddVisible,
             groupAddVisible,
 
-            relatedUsers
+            relatedUsers,
+            errors
         }
     }    
 }
@@ -82,7 +94,6 @@ export default {
 
 <template>
     <div class="chats-header">
-        
         <com-button :class="'menu-button'" @click="showMenu">&#9776;</com-button>
         <ButtonsMenu
         v-model:show="menu"
@@ -96,11 +107,11 @@ export default {
                     <h2>Новый чат</h2>
                 </template>
                 <template v-slot:fields>
-
+                    <span v-if="errors.newPrivateChat" class="form-errors">{{ errors.newPrivateChat }}</span>
                     <label :for="'newPrivateChat'">Идентификатор</label>
                     <com-input :id="'newPrivateChat'" 
                     class="form-control newPrivate"
-                    :placeholder="'@Ivan1234'"
+                    :placeholder="'Ivan1234'"
                     v-model="createPrivateForm.username"
                     required></com-input>
 
@@ -168,4 +179,4 @@ export default {
     width: 300px;
 }
 
-</style>@/hooks/chatHooks/createChat
+</style>

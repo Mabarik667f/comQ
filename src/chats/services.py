@@ -129,9 +129,9 @@ class PrivateChatService:
                 return chat
             except ValueError as error:
                 print(f"Ошибка добавления пользователей: {error}")
-                raise serializers.ValidationError({"detail": "Ошибка добавления пользователей."})
+                raise serializers.ValidationError("Ошибка добавления пользователей.")
         else:
-            raise serializers.ValidationError({"detail": "Чат уже существует."})
+            raise serializers.ValidationError("Чат уже существует.")
 
 
 class GroupSettingsService:

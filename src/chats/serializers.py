@@ -117,20 +117,21 @@ class GroupChatSerializer(ChatSerializer):
 
 
 class PrivateChatSerializer(ChatSerializer):
-    """Добавить сюда пользователя - собеседника"""
     last_message = serializers.SerializerMethodField()
     current_users = SlugRelatedField(
         slug_field='username',
         queryset=CustomUser.objects.all(),
-        many=True)
+        many=True,
+        error_messages={"does_not_exist": 'Такого пользователя не существует'})
 
     class Meta(ChatSerializer.Meta):
         depth = 1
         fields = ChatSerializer.Meta.fields + ('last_message', )
 
+
     def create(self, validated_data):
         if len(validated_data['current_users']) == 1:
-            return PrivateChatService.create_private_chat(validated_data)
+                return PrivateChatService.create_private_chat(validated_data)
         else:
             raise ValueError('error')
 

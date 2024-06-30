@@ -17,7 +17,7 @@ export default function createPrivateChat() {
             chat.value = response.data;
             return {chat}
         } catch (error) {
-            console.log(error)
+            return error.response.data
         }
         
         
