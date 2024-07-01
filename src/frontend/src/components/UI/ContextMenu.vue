@@ -1,8 +1,8 @@
 <script>
-import { ref, onUnmounted } from 'vue';
+import { ref, onUnmounted, nextTick } from 'vue';
 
 export default {
-    name: "com-context-menu",
+    name: "context-menu",
     props: {
         options: {
             type: Array,
@@ -13,13 +13,39 @@ export default {
         const isVisible = ref(false);
         const x = ref(0);
         const y = ref(0);
+        const menuWidth = ref(null);
+        const menuHeight = ref(null);
+        const windowWidth = ref(null);
+        const windowHeight = ref(null);
         const menuRef = ref(null);
 
-        const openMenu = (event) => {
+        const openMenu = async (event) => {
             x.value = event.clientX;
             y.value = event.clientY;
+
             isVisible.value = true;
             event.preventDefault();
+
+            await nextTick()
+
+            menuWidth.value = menuRef.value.offsetWidth + 4;
+            menuHeight.value = menuRef.value.offsetHeight + 4;
+
+            windowHeight.value = window.innerHeight;
+            windowWidth.value = window.innerWidth;
+
+            if ((windowWidth.value - x.value) < menuWidth.value) {
+                menuRef.value.style.left = windowWidth.value - menuWidth.value + "px"
+            } else {
+                menuRef.value.style.left = x.value + "px"
+            }
+            
+            if ((windowHeight.value - y.value) < menuHeight.value) {
+                menuRef.value.style.top = windowHeight.value - menuHeight.value + "px"
+            } else {
+                menuRef.value.style.top = y.value + "px"
+            }
+
             document.addEventListener('click', handleClickOutside, true);
         };
 
@@ -53,7 +79,6 @@ export default {
         <div ref="menuRef" class="context-menu"
             @click.stop="closeMenu"
             v-show="isVisible"
-            :style="{ top: y + 'px', left: x + 'px' }"
             tabindex="-1">
             <div class="menu-inner" @click.stop="closeMenu">
                 <ul>

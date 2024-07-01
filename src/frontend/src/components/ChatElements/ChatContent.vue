@@ -238,7 +238,7 @@ export default {
         </com-popup>
 
         <transition name="context-fade">
-            <com-context-menu :options="actions" ref="contextMenu" />
+            <context-menu :options="actions" ref="contextMenu" />
         </transition>
         <div class="input-group new-message">
             <div v-if="editingMessage.text_content">

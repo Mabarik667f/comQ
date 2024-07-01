@@ -1,14 +1,19 @@
 <script>
 import router from '@/router';
 import { useStore } from 'vuex';
-import { ref } from 'vue';
-import toggleMixin from '@/mixins/toggleMixin';
+import { ref, onMounted, onUnmounted } from 'vue';
 export default {
-    mixins: [toggleMixin],
-    emits: ["group", "private"],
+    emits: ["group", "private", "showUpdate"],
+    props: {
+        show: {
+            type: Boolean,
+            default: false
+        }
+    },
     setup(props, {emit}) {
 
         const store = useStore();
+        const menuRef = ref(null)
 
         const showPrivateDialog = () => {
             emit("private", true);
@@ -29,6 +34,20 @@ export default {
             {"name": 'Выйти', "event": logout}
         ])
 
+        const handleOutsideClick = (event) => {
+            if (menuRef.value && !menuRef.value.contains(event.target)) {
+                emit('showUpdate', false);
+            }
+        };
+
+        onMounted(() => {
+            document.addEventListener('click', handleOutsideClick);
+        });
+
+        onUnmounted(() => {
+            document.removeEventListener('click', handleOutsideClick);
+        });
+
         const handleClick = (action) => {
             if (action.event) {
                 action.event();
@@ -37,14 +56,14 @@ export default {
             }
         }
 
-        return {actions, handleClick}
+        return {actions, handleClick, menuRef};
     }
 }
 </script>
 
 <template>
     <transition-group name="context-fade">
-    <ul class="menu" v-if="show" @click.self="hideDialog">
+    <ul class="menu" v-if="show" ref="menuRef">
         <li v-for="action in actions" :key="action.name" class="menu-item" @click="handleClick(action)">
             {{ action.name }}
         </li>

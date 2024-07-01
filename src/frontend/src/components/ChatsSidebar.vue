@@ -39,7 +39,6 @@ export default {
             
                 ws.onmessage = function(e) {
                     const data = JSON.parse(e.data);
-                    console.log(data)
                     if (data.message) {
                         createMessage(data.message, id)  
                     } else if (data.deleted_message && data.delete_author) {

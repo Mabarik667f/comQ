@@ -9,21 +9,10 @@ import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
 
 export default {
-    data() {
-        return {
-            menu: false
-        }
-    },
     components: {
         SearchChat,
         Multiselect,
         ButtonsMenu
-    },
-    methods: {
-        showMenu() {
-            this.menu = true;
-        }
-        
     },
     setup() {
 
@@ -79,6 +68,11 @@ export default {
             title: ''
         })
 
+        const menu = ref(false);
+        const showMenu = () => {
+            menu.value = !menu.value
+        }
+
         const relatedUsers = store.getters.getRelatedUsers;
 
         return {
@@ -95,7 +89,9 @@ export default {
 
             relatedUsers,
             errors,
-            store
+            store,
+            menu,
+            showMenu
         }
     }    
 }
@@ -103,9 +99,10 @@ export default {
 
 <template>
     <div class="chats-header">
-        <com-button :class="'menu-button'" @click="showMenu">&#9776;</com-button>
+        <com-button :class="'menu-button'" @click.stop="showMenu">&#9776;</com-button>
         <ButtonsMenu
-        v-model:show="menu"
+        :show="menu"
+        @showUpdate="showMenu"
         @private="showPrivateDialog"
         @group="showGroupDialog"></ButtonsMenu>
         <SearchChat></SearchChat>

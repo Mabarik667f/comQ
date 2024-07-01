@@ -25,7 +25,6 @@ export default async function cleanChatData(chat) {
     }
 
     if (!store.getters.getWebSocketById(chat.pk) && !store.getters.getChat(chat.pk)) {
-        console.log(chat)
         const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`);
         store.commit('updateWebsockets', {id: chat.pk, ws: ws});
         store.commit('updateChats', {chat: chat})
