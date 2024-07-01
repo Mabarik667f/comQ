@@ -43,6 +43,16 @@ a {
   color: red;
 }
 
+nav {
+  padding: 30px;
+}
+
+nav a {
+  font-weight: bold;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
 .com__btn {
     --bs-btn-color: #fff;
     --bs-btn-bg: orangered;
