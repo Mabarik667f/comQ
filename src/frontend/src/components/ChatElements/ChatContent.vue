@@ -1,6 +1,6 @@
 <script>
 import ChatMessage from "@/components/ChatElements/ChatMessage.vue"
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted, nextTick } from "vue";
 import { useStore } from "vuex";
 import router from "@/router";
 
@@ -17,7 +17,6 @@ export default {
     setup(props) {
 
         const store = useStore();
-
         const chatId = ref(props.chatId);
         const chat = computed(() => store.getters.getChat(chatId.value));
 
@@ -208,9 +207,34 @@ export default {
             popupTriggers.value[trigger] = !popupTriggers.value[trigger]
         }
 
+        const chatContainer = ref(null);
+        const isAtBottom = ref(false);
+
+        const handleScroll = () => {
+            const el = chatContainer.value.$el
+            isAtBottom.value = el.scrollHeight - el.scrollTop === el.clientHeight;
+        }
+
+        const scrollToBottom = async () => {
+            const el = chatContainer.value.$el
+            el.scrollTop = el.scrollHeight
+        }
+
+        onMounted(() => {
+            const container = chatContainer.value.$el;
+            container.addEventListener('scroll', handleScroll);
+        });
+
+        watch(() => (chat.value?.messages), () => {
+            if (isAtBottom.value) {
+                nextTick(() => {
+                    scrollToBottom()
+                })
+            }
+        }, {deep: true})
 
         return {
-                chat,
+                chat, chatContainer, scrollToBottom, isAtBottom,
                 actions, contextMenu, showContextMenu,
                 popupTriggers, togglePopup,
                 addMessage, editMessage, deleteMessage,
@@ -223,8 +247,9 @@ export default {
 </script>
 
 <template>
+        <button @click="scrollToBottom()" v-show="!isAtBottom">dadad</button>
     <div class="chat-content">
-        <transition-group name="message" tag="div" class="chat-messages">
+        <transition-group name="message" tag="div" class="chat-messages" ref="chatContainer">
         <ChatMessage v-for="message in chat?.messages"
             :key="message.id" :message="message"
             @showContextMenu="showContextMenu"
@@ -237,9 +262,6 @@ export default {
             <com-button @click="deleteMessage">Удалить</com-button>
         </com-popup>
 
-        <transition name="context-fade">
-            <context-menu :options="actions" ref="contextMenu" />
-        </transition>
         <div class="input-group new-message">
             <div v-if="editingMessage.text_content">
                 <div>{{ editingMessage.text_content }}</div>
@@ -258,6 +280,10 @@ export default {
                     </div>
                 </transition>
             </div>
+
+        <transition name="context-fade">
+            <context-menu :options="actions" ref="contextMenu" />
+        </transition>
 
         </div>
     </div>
@@ -301,6 +327,7 @@ export default {
     flex-direction: column;
     flex: 1;
     overflow-y: auto;
+    scroll-behavior: smooth;
 }
 
 .chat-content::-webkit-scrollbar {
@@ -319,6 +346,7 @@ export default {
 .new-message {
     width: 100%;
     display: flex;
+    position: sticky;
 }
 
 .input-group {
