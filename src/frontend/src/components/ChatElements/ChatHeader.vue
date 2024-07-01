@@ -57,7 +57,7 @@ export default {
         }, { immediate: true });
 
         watch(() => (chatData.value), () => {
-            if (chatData.value.chat_type === 'G') {
+            if (chatData.value?.chat_type === 'G') {
                 chatDescribe.value.amountUsers = chatData.value.current_users.length
             }
             

@@ -2,16 +2,18 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 from django.core.cache import cache
+from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
 
 from users.models import CustomUser
 
 from .models import Chat, Message, MessageContent, UserToChat, GroupSettings
-from .serializers import ChatSerializer, MessageSerializer, GroupSettingsSerializer
+from .serializers import ChatSerializer, MessageSerializer, GroupSettingsSerializer, GroupChatSerializer, \
+    PrivateChatSerializer
 from users.serializers import UserProfileSerializer, UserDataOnChatSerializer
 import logging
 
-from .services import GroupChatService
+from .services import GroupChatService, PrivateChatService
 from django.utils import timezone
 
 logger = logging.getLogger("consumer")
@@ -98,6 +100,8 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_leave_user(content)
         elif message_type == 'chat.add_user':
             await self.handle_add_users(content)
+        elif message_type == 'chat.new_chat':
+            await self.handle_create_chat(content)
         else:
             logger.exception("Нет такого метода в ws!")
             raise ValueError("Нет такого метода в ws!")
@@ -148,6 +152,23 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
         for message in messages:
             await self.send_message(message, chat_pk=content.get('chat_pk'), chat=chat)
 
+    async def handle_create_chat(self, content):
+
+        chat = await self.create_new_chat(content)
+        if type(chat) in (list, None):
+
+            await self.channel_layer.send(
+                self.channel_name, {"type": "chat.error",
+                                    "error": chat[0],
+                                    "chat_type": content.get('data')['chat_type']}
+            )
+        else:
+
+            await self.channel_layer.group_send(
+                self.hub, {"type": "chat.new_chat",
+                           "chat": chat}
+            )
+
     async def send_message(self, message, chat_pk, chat, **kwargs):
         channel_group = f"chat_{chat_pk}"
         event = {"type": "chat.message",
@@ -158,6 +179,13 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.group_send(
             channel_group, event
         )
+
+    async def chat_new_chat(self, event):
+        await self.send_json({"chat": event.get('chat')})
+
+    async def chat_error(self, event):
+        content = {"error": event.get('error'), "chat_type": event.get('chat_type')}
+        await self.send_json(content)
 
     async def chat_delete_user(self, event):
         await self.send_json({"deleted_user": event['deleted_user'], "chat": event['chat']})
@@ -190,6 +218,30 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
                                 "user_pk": user_pk,
                                 "method": 'delete'}
             )
+
+    async def create_new_chat(self, content):
+        data, title = content.get('data'), content.get('title', None)
+        kwargs = {}
+        try:
+            if data['chat_type'] == 'P':
+                serializer_type = PrivateChatSerializer
+                serializer: PrivateChatSerializer = await database_sync_to_async(PrivateChatSerializer)(
+                    data=data)
+            else:
+                serializer_type = GroupChatSerializer
+                context = {"user": self.scope['user'], "title": title}
+                serializer: GroupChatSerializer = await database_sync_to_async(GroupChatSerializer)(
+                    data=data, context=context)
+                kwargs['context'] = context
+
+            await database_sync_to_async(serializer.is_valid)(raise_exception=True)
+            chat = await database_sync_to_async(serializer.create)(serializer.validated_data)
+            return await self.methods.get_serialized_data(serializer_type, chat, **kwargs)
+        except serializers.ValidationError as e:
+            logger.error(f"Ошибка валидации:, {e.detail}")
+            return [e.detail]
+        except Exception as e:
+            logger.error(e)
 
     async def delete_user(self, user, chat_pk):
         user: CustomUser = await database_sync_to_async(CustomUser.objects.get)(username=user)

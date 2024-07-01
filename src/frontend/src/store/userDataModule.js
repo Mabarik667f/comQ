@@ -1,10 +1,14 @@
 export const userDataModule = {
     state: () => ({
-        username: '',
-        id: '',
+        username: "",
+        id: "",
         relatedUsers: [],
         currentChatRole: 'D',
-        isOnline: false
+        isOnline: false,
+        errors: {
+            newPrivateChat: "",
+            newGroupChat: ""
+        }
     }),
 
     getters: {
@@ -16,6 +20,9 @@ export const userDataModule = {
         },
         getUserRole(state) {
             return state.currentChatRole
+        },
+        getCreateErrors(state) {
+            return state.errors
         }
     },
 
@@ -32,6 +39,12 @@ export const userDataModule = {
         },
         setUserRole(state, {role}) {
             state.currentChatRole = role;
+        },
+        updateCreatePrivateError(state, {error}) {
+            state.errors.newPrivateChat = error
+        },
+        updateCreateGroupError(state, {error}) {
+            state.errors.newGroupChat = error
         }
     },
 

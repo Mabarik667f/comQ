@@ -1,12 +1,13 @@
 <script>
 import SearchChat from "@/components/SearchChat";
-import createPrivateChat from "@/hooks/chatHooks/createPrivateChat"
-import createGroupChat from "@/hooks/chatHooks/createGroupChat"
-import cleanChatData from "@/hooks/chatHooks/cleanChatData";
 import Multiselect from 'vue-multiselect'
 import ButtonsMenu from "@/components/ChatElements/ButtonsMenu.vue"
-import { ref } from "vue";
-import store from "@/store";
+import { ref, computed } from "vue";
+import { useStore } from "vuex";
+
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+
 export default {
     data() {
         return {
@@ -26,8 +27,39 @@ export default {
     },
     setup() {
 
+        const store = useStore()
         const privateAddVisible = ref(false)
         const groupAddVisible = ref(false)
+        const hub = computed(() => store.getters.getHub)
+        const errors = computed(() => store.getters.getCreateErrors)
+
+        const createPrivateChatHook = () => {
+            hub.value.send(
+                JSON.stringify({
+                    "message_type": "chat.new_chat",
+                    "data": {"current_users": [createPrivateForm.value.username],
+                            "chat_type": createPrivateForm.value.chat_type,
+                            "host": jwtDecode(Cookies.get('access'))['user_id']}
+                })
+            )
+        }
+
+
+        const createGroupChatHook = async () => {
+            const currentUsers = [];
+            for (const user of createGroupForm.value.currentUsers) {
+                currentUsers.push(user.value);
+            } 
+            hub.value.send(
+                JSON.stringify({
+                    "message_type": "chat.new_chat",
+                    "data": {"current_users": currentUsers,
+                            "chat_type": createGroupForm.value.chat_type,
+                            "host": jwtDecode(Cookies.get('access'))['user_id']},
+                    "title": createGroupForm.value.title
+                })
+            )
+        }
 
         const showPrivateDialog = (event) => {
             privateAddVisible.value = event;
@@ -38,38 +70,14 @@ export default {
 
         const createPrivateForm = ref({
             username: '',
-            chatType: 'P'
+            chat_type: 'P'
         })
 
         const createGroupForm = ref({
             currentUsers: [],
-            chatType: "G",
+            chat_type: "G",
             title: ''
         })
-
-        const errors = ref({
-            newPrivateChat: '',
-            newGroupChat: ''
-        })
-
-        const createPrivateChatHook = async () => {
-            const {asyncCall} = createPrivateChat();
-            const data = await asyncCall(createPrivateForm.value);
-            if (data.error) {
-                console.log(data.error)
-                errors.value.newPrivateChat = data.error[0] || data.error.current_users[0];
-            } else {
-                errors.value.newPrivateChat = '';
-                await cleanChatData(data.value)
-            }
-        }
-            
-
-        const createGroupChatHook = async () => {
-            const {asyncCall} = createGroupChat();
-            const {chat} = await asyncCall(createGroupForm.value);
-            await cleanChatData(chat.value)
-        }
 
         const relatedUsers = store.getters.getRelatedUsers;
 
@@ -86,7 +94,8 @@ export default {
             groupAddVisible,
 
             relatedUsers,
-            errors
+            errors,
+            store
         }
     }    
 }

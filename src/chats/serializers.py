@@ -128,10 +128,9 @@ class PrivateChatSerializer(ChatSerializer):
         depth = 1
         fields = ChatSerializer.Meta.fields + ('last_message', )
 
-
     def create(self, validated_data):
         if len(validated_data['current_users']) == 1:
-                return PrivateChatService.create_private_chat(validated_data)
+            return PrivateChatService.create_private_chat(validated_data)
         else:
             raise ValueError('error')
 

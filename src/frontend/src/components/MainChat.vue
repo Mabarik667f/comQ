@@ -54,6 +54,7 @@ export default {
 
         watch(() => route.params.pk, (newChatId) => {
             chatId.value = parseInt(newChatId);
+            fetchData()
         }, {deep: true})
 
         watch(() => (chat.value?.current_users), () => {
