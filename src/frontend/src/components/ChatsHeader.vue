@@ -1,5 +1,4 @@
 <script>
-import SearchChat from "@/components/SearchChat";
 import Multiselect from 'vue-multiselect'
 import ButtonsMenu from "@/components/ChatElements/ButtonsMenu.vue"
 import { ref, computed } from "vue";
@@ -10,11 +9,17 @@ import Cookies from 'js-cookie';
 
 export default {
     components: {
-        SearchChat,
         Multiselect,
         ButtonsMenu
     },
-    setup() {
+    props: {
+        searchQuery: {
+            type: String,
+            default: ''
+        }
+    },
+    emits: ['update:modelValue'],
+    setup(props, {emit}) {
 
         const store = useStore()
         const privateAddVisible = ref(false)
@@ -73,6 +78,10 @@ export default {
             menu.value = !menu.value
         }
 
+        const updateSearchQuery = (event) => {
+            emit('update:modelValue', event.target.value);
+        }
+
         const relatedUsers = store.getters.getRelatedUsers;
 
         return {
@@ -91,7 +100,8 @@ export default {
             errors,
             store,
             menu,
-            showMenu
+            showMenu,
+            updateSearchQuery
         }
     }    
 }
@@ -105,7 +115,9 @@ export default {
         @showUpdate="showMenu"
         @private="showPrivateDialog"
         @group="showGroupDialog"></ButtonsMenu>
-        <SearchChat></SearchChat>
+
+        <com-input type="text" :value="searchQuery" placeholder="Поиск" class="search-input"
+        @input="updateSearchQuery"></com-input>
 
         <com-dialog v-model:show="privateAddVisible" class="privateChatCreate">
             <com-form @submit.prevent="createPrivateChatHook()">

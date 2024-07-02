@@ -26,7 +26,28 @@ export default {
         const store = useStore();
         const chats = computed(() => store.getters.getChats);
         const websockets = computed(() => store.getters.getWebSockets)
-        const userData = ref(props.userData)
+        const userData = ref(props.userData);
+        const searchQuery = ref('');
+
+        const filteredChats = computed(() => {
+            if(!searchQuery.value) {
+                return chats.value
+            } 
+            const res = ref([]);
+            for (const chat of chats.value) {
+                if (chat.chat_type === 'G') {
+                    if(chat.groupSettings.title.toLowerCase().slice(0, searchQuery.value.length) === searchQuery.value.toLowerCase()) {
+                        res.value.push(chat)
+                    }
+                } else {
+                    if(chat.partner.name.toLowerCase().slice(0, searchQuery.value.length) === searchQuery.value.toLowerCase()) {
+                        res.value.push(chat)
+                    }
+                }
+            }
+            return res.value
+            
+        })
 
         const reloadChats = async (chats) => {
             for (const chat of chats) {
@@ -37,34 +58,34 @@ export default {
 
         const websocketInit = (ws, id) => {
             
-                ws.onmessage = function(e) {
-                    const data = JSON.parse(e.data);
-                    if (data.message) {
-                        createMessage(data.message, id)  
-                    } else if (data.deleted_message && data.delete_author) {
-                        store.dispatch('deleteMessage', {chatId: id, message: data.deleted_message})
+            ws.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                if (data.message) {
+                    createMessage(data.message, id)  
+                } else if (data.deleted_message && data.delete_author) {
+                    store.dispatch('deleteMessage', {chatId: id, message: data.deleted_message})
 
-                        if (data.deleted_message.user.username !== store.getters.getUserName
-                        && data.delete_author.username !== store.getters.getUserName) {
-                            store.commit('updateNotifications', { chatId: id, status: "del" });
-                        }                           
-                    } else if (data.edited_message) {
-                        store.dispatch('editMessage', {chatId: id, message: data.edited_message})
-                    } else if (data.deleted_chat) {
-                        console.log(data.deleted_chat)
-                        store.commit('deleteChat', {chatId: id})
-                    } else if (data.clear_notifications) {
-                        store.commit('clearNotifications', {chatId: id})
-                    }
-                };
+                    if (data.deleted_message.user.username !== store.getters.getUserName
+                    && data.delete_author.username !== store.getters.getUserName) {
+                        store.commit('updateNotifications', { chatId: id, status: "del" });
+                    }                           
+                } else if (data.edited_message) {
+                    store.dispatch('editMessage', {chatId: id, message: data.edited_message})
+                } else if (data.deleted_chat) {
+                    console.log(data.deleted_chat)
+                    store.commit('deleteChat', {chatId: id})
+                } else if (data.clear_notifications) {
+                    store.commit('clearNotifications', {chatId: id})
+                }
+            };
 
-                ws.onclose = function(e) {
-                    console.log("WebSocket connection closed:", e);
-                };
+            ws.onclose = function(e) {
+                console.log("WebSocket connection closed:", e);
+            };
 
-                ws.onerror = function(e) {
-                    console.error("WebSocket error:", e);
-                };            
+            ws.onerror = function(e) {
+                console.error("WebSocket error:", e);
+            };            
         }
 
         const selectChat = async (chat) => {
@@ -95,16 +116,16 @@ export default {
             }
         }, { deep: true });
 
-        return {chats, selectChat}
+        return {filteredChats, searchQuery, selectChat}
     },
 }
 </script>
 
 <template>
     <div class="chats">
-        <ChatsHeader></ChatsHeader>
+        <ChatsHeader v-model="searchQuery"></ChatsHeader>
         <transition-group name="slide-fade" tag="div">
-        <div class="short-chat" v-for="chat in chats" :key="chat">
+        <div class="short-chat" v-for="chat in filteredChats" :key="chat">
             <ChatCard :chat="chat" @click="selectChat(chat)"></ChatCard>
         </div>
         </transition-group>
