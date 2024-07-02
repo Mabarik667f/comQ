@@ -42,6 +42,7 @@ export default {
                 } else {
                     // once - выполняем только один раз и удаляем обработчик
                     ws.value.addEventListener('open', () => {
+                        store.dispatch('checkTokenLifeTime')
                         ws.value.send(
                             JSON.stringify({
                                 message_type: 'chat.clear_notifications',
@@ -63,6 +64,7 @@ export default {
         })
 
         const addMessage = () => {
+            store.dispatch('checkTokenLifeTime')
             if (!ws.value) {
                 router.push('/')
             } else {
@@ -79,6 +81,7 @@ export default {
         };
 
         const editMessage = () => {
+            store.dispatch('checkTokenLifeTime')
             ws.value.send(
                 JSON.stringify({
                     message_type: 'chat.edit_message',
@@ -92,6 +95,7 @@ export default {
 
         const deleteCandidat = ref(null);
         const deleteMessage = () => {
+            store.dispatch('checkTokenLifeTime')
             ws.value.send(
                 JSON.stringify({
                     message_type: 'chat.delete_message',
@@ -102,6 +106,7 @@ export default {
         }
 
         const deleteRoom = () => {
+            store.dispatch('checkTokenLifeTime')
             ws.value.send(
                 JSON.stringify({
                     message_type: 'chat.delete_chat',
@@ -111,6 +116,7 @@ export default {
         }
 
         const deleteUserToRoom = (user) => {
+            store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
                     message_type: 'chat.delete_user',
@@ -121,6 +127,7 @@ export default {
         }
 
         const leaveUserToRoom = () => {
+            store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
                     message_type: 'chat.leave_user',
@@ -130,6 +137,7 @@ export default {
         }
 
         const addUserToRoom = (addedUsers) => {
+            store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
                     message_type: 'chat.add_user',
@@ -160,16 +168,6 @@ export default {
             formData.value.reply = null;
             replyMessage.value = {};
         }
-
-        const handleEnter = () => {
-            if (formData.value.message) {
-                if (editingMessage.value.text_content) {
-                    editMessage();
-                } else {
-                    addMessage();
-                }
-            }
-        };
 
         const contextMenu = ref(null);
         const actions = ref([])
@@ -208,6 +206,25 @@ export default {
             popupTriggers.value[trigger] = !popupTriggers.value[trigger]
         }
 
+        const messageRows = ref(1);
+        const handleShiftBackspace = (event) => {
+            if (event.shiftKey && messageRows.value > 1) {
+                messageRows.value -= 1;
+            }
+        }
+        const handleEnter = (event) => {
+            if (event.shiftKey && event.key === 'Enter') {
+                messageRows.value += 1; 
+            }  else if (formData.value.message) {
+                messageRows.value = 1;
+                if (editingMessage.value.text_content) {
+                    editMessage();
+                } else {
+                    addMessage();
+                }
+            }
+        };
+
         const chatContainer = ref(null);
         const isAtBottom = ref(false);
 
@@ -235,7 +252,7 @@ export default {
         }, {deep: true})
 
         return {
-                chat, chatContainer, scrollToBottom, isAtBottom,
+                chat, chatContainer, scrollToBottom, isAtBottom, messageRows, handleShiftBackspace,
                 actions, contextMenu, showContextMenu,
                 popupTriggers, togglePopup,
                 addMessage, editMessage, deleteMessage,
@@ -248,7 +265,6 @@ export default {
 </script>
 
 <template>
-        <button @click="scrollToBottom()" v-show="!isAtBottom">dadad</button>
     <div class="chat-content">
         <transition-group name="message" tag="div" class="chat-messages" ref="chatContainer">
         <ChatMessage v-for="message in chat?.messages"
@@ -273,8 +289,10 @@ export default {
                 <com-button @click="cancelReply">&#x2717;</com-button>
             </div>
             <div class="input-container">
-                <com-input class="form-control" style="border-radius: 0%;" v-model="formData.message"
-                @keydown.enter="handleEnter"></com-input>
+                <com-text class="form-control new-message-input" v-model="formData.message"
+                :rows="messageRows" @keydown.enter="handleEnter"
+                @keydown.backspace="handleShiftBackspace"
+                placeholder="Новое сообщение"></com-text>
                 <transition name="slide-fade">
                     <div class="input-group-append" v-if="formData.message">
                         <com-button class="btn-send" @click="handleEnter">&#9658;</com-button>
@@ -314,7 +332,7 @@ export default {
 }
 
 .chat-content {
-    background-color: aquamarine;
+    background-color: rgba(30, 30, 35);
     margin: 0 20%;
     height: 93%;
     display: flex;
@@ -348,6 +366,29 @@ export default {
     width: 100%;
     display: flex;
     position: sticky;
+    margin-top: 5px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(30, 30, 45);
+    border-radius: 20px;
+}
+
+.new-message-input {
+    background-color: rgb(36, 36, 43);
+    border: 1px solid rgba(30, 30, 45);
+    color: whitesmoke;
+    cursor: text;
+}
+
+.new-message-input:focus {
+    background-color: rgb(36, 36, 43);
+    border: 1px solid rgba(30, 30, 45);
+    color: whitesmoke;
+    cursor: text;
+}
+
+.new-message-input::placeholder {
+    color: whitesmoke;
+    opacity: 0.4;
 }
 
 .input-group {

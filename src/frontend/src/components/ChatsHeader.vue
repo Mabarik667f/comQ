@@ -28,6 +28,7 @@ export default {
         const errors = computed(() => store.getters.getCreateErrors)
 
         const createPrivateChatHook = () => {
+            store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
                     "message_type": "chat.new_chat",
@@ -44,6 +45,7 @@ export default {
             for (const user of createGroupForm.value.currentUsers) {
                 currentUsers.push(user.value);
             } 
+            store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
                     "message_type": "chat.new_chat",
@@ -176,6 +178,7 @@ export default {
 .chats-header {
     display: flex;
     flex-direction: row;
+    height: 7vh;
 }
 .menu-button {
     --bs-btn-color: #333; /* Цвет текста кнопки (темно-серый) */
