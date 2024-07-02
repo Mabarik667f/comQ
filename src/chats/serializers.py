@@ -16,6 +16,7 @@ logger = logging.getLogger("chats")
 class MessageSerializer(serializers.ModelSerializer):
     created_at_formatted = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
+    reply = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -38,6 +39,9 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_user(self, obj: Message):
         from users.serializers import UserDataOnChatSerializer
         return UserDataOnChatSerializer(obj.user).data
+
+    def get_reply(self, obj: Message):
+        return MessageSerializer(obj.reply).data
 
     def update(self, instance, validated_data):
         service_obj = MessageService()
@@ -136,6 +140,13 @@ class PrivateChatSerializer(ChatSerializer):
 
     def get_last_message(self, obj: Chat):
         return MessageSerializer(obj.messages.order_by('created_at').last()).data
+
+    def to_representation(self, instance):
+        from users.serializers import UserDataOnChatSerializer
+        res = super().to_representation(instance)
+        res['current_users'] = UserDataOnChatSerializer(instance.current_users.all(), many=True,
+                                        context={'chat': instance}).data
+        return res
 
 
 class GroupSettingsSerializer(serializers.ModelSerializer):

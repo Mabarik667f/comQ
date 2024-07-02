@@ -22,7 +22,7 @@ export default {
 
         const formData = ref({
             message: '',
-            reply: false
+            reply: null
         });
 
         const editingMessage = ref({});
@@ -55,6 +55,7 @@ export default {
 
         watch(() => (props.chatId), (newId) => {
             chatId.value = newId
+            
         }, {immediate: true});
 
         watch(() => (ws.value), () => {
@@ -150,13 +151,13 @@ export default {
         }
 
         const setReply = (message) => {
-            formData.value.reply = true;
+            formData.value.reply = message.id;
             replyMessage.value = message;
             cancelEditMessage()
         }
 
         const cancelReply = () => {
-            formData.value.reply = false;
+            formData.value.reply = null;
             replyMessage.value = {};
         }
 

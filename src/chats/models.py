@@ -103,7 +103,7 @@ class Message(models.Model):
     content_type = models.ForeignKey(to=MessageContent, on_delete=models.PROTECT)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    reply = models.BooleanField(default=False)
+    reply = models.ForeignKey(to='self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
     system = models.BooleanField(default=False)
 
     text_content = models.TextField()

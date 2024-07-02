@@ -63,11 +63,14 @@ class ConsumersMethods:
         chat: Chat = await self.get_chat(chat_pk)
         return GroupChatService(user=self.user, chat=chat)
 
-    async def create_message(self, message, chat, system=False, reply=False):
+    async def create_message(self, message, chat, system=False, reply=None):
         chat: Chat = await self.get_chat(chat)
         content_type = await database_sync_to_async(MessageContent.objects.get_or_create)(
             name=MessageContent.TypeOfMessageContent.TEXT
         )
+
+        if reply is not None:
+            reply = await database_sync_to_async(Message.objects.get)(pk=reply)
         new_message = await database_sync_to_async(Message.objects.create)(
             chat=chat,
             user=self.user,
