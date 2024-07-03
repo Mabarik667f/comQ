@@ -13,7 +13,6 @@ import getUserData from "@/hooks/getUserData";
 import getRelatedUsers from "@/hooks/getRelatedUsers"
 import cleanChatData from "@/hooks/chatHooks/cleanChatData";
 import { useStore } from "vuex";
-import refresh from "@/hooks/refresh"
 import {computed, onMounted, ref} from "vue";
 export default {
   name: 'HomeView',
@@ -96,9 +95,6 @@ export default {
 
     onMounted(async () => {
       fetchUserData();
-      setInterval(() => {
-        refresh();
-      }, 14 * 60 * 1000); 
     });
 
     return {userData}
@@ -110,6 +106,7 @@ export default {
 <style scoped>
 .main {
   display: flex;
+  background-color: rgba(30, 30, 35);
   flex-direction: row;
 }
 </style>

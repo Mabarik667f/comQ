@@ -289,7 +289,7 @@ export default {
                 <com-button @click="cancelReply">&#x2717;</com-button>
             </div>
             <div class="input-container">
-                <com-text class="form-control new-message-input" v-model="formData.message"
+                <com-text class="new-message-input" v-model="formData.message"
                 :rows="messageRows" @keydown.enter="handleEnter"
                 @keydown.backspace="handleShiftBackspace"
                 placeholder="Новое сообщение"></com-text>
@@ -346,6 +346,7 @@ export default {
     flex-direction: column;
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     scroll-behavior: smooth;
 }
 
@@ -358,10 +359,6 @@ export default {
     border-radius: 0%;
 }
 
-.form-control:focus {
-    border-color: #ccc;
-    box-shadow: none;
-}
 .new-message {
     width: 100%;
     display: flex;
@@ -370,25 +367,6 @@ export default {
     margin-bottom: 20px;
     border: 1px solid rgba(30, 30, 45);
     border-radius: 20px;
-}
-
-.new-message-input {
-    background-color: rgb(36, 36, 43);
-    border: 1px solid rgba(30, 30, 45);
-    color: whitesmoke;
-    cursor: text;
-}
-
-.new-message-input:focus {
-    background-color: rgb(36, 36, 43);
-    border: 1px solid rgba(30, 30, 45);
-    color: whitesmoke;
-    cursor: text;
-}
-
-.new-message-input::placeholder {
-    color: whitesmoke;
-    opacity: 0.4;
 }
 
 .input-group {

@@ -103,10 +103,10 @@ export default {
     position: fixed;
     z-index: 9999;
     overflow: hidden;
-    background: #FFF;
+    background-color: rgb(36, 36, 43);
     border-radius: 5px;
-    box-shadow: 0 1px 4px 0 #eee;
     padding: 10px;
+    color: whitesmoke;
 }
 
 .context-menu:focus {
@@ -122,10 +122,12 @@ ul {
 li {
     padding: 8px 12px;
     cursor: pointer;
+    border-radius: 5px;
 }
 
 li:hover {
-    background: #eee;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
 }
 
 .context-fade-enter-active, 

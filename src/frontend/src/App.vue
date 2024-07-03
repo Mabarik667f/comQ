@@ -15,29 +15,17 @@ export default {
   box-sizing: border-box;
   font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
   font-size: 18px;
-  /* background-color: darkgrey; */
+}
+
+html, body, #app, .profile {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 a {
   text-decoration: none;
 }
-
-/* .main {
-
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: column;
-  align-content: center;
-  justify-content: center;
-  align-items: flex-start;
-  height: 80vh;
-  max-width: 700px;
-  margin: 10vh auto;
-  box-shadow: 0 0 10px rgba(255, 69, 0, 0.5); 
-  border-radius: 20px; 
-  padding: 20px;
-
-} */
 
 .form-errors {
   color: red;
@@ -71,4 +59,32 @@ nav a {
     cursor: pointer;
 
 }
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  transition: width 0.3s, height 0.3s;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.online {
+    color: orangered;
+}
+
+.offline {
+    color:rgba(255, 255, 255, 0.3);
+}
+
 </style>

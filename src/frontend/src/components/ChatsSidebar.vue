@@ -5,7 +5,7 @@ import { useStore } from 'vuex';
 import getChatData from "@/hooks/chatHooks/getChatData"
 import cleanChatData from "@/hooks/chatHooks/cleanChatData"
 import createMessage from '@/hooks/chatHooks/createMessage';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import router from '@/router';
 import Cookies from "js-cookie";
 
@@ -116,19 +116,49 @@ export default {
             }
         }, { deep: true });
 
-        return {filteredChats, searchQuery, selectChat}
+        const chatsContainter = ref(null);
+        const startX = ref(0);
+        const startWidth = ref(0);
+
+        const onMouseMove = (event) => {
+            const newWidth = startWidth.value + (event.clientX - startX.value);
+            if (newWidth >= 200 && newWidth <= 600) {
+                chatsContainter.value.style.width = `${newWidth}px`;
+                store.commit('updateSidebarWidth', {width: newWidth})
+            }
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        const onMouseDown = (event) => {
+            startX.value = event.clientX;
+            startWidth.value = chatsContainter.value.offsetWidth;
+            document.addEventListener('mousemove', onMouseMove)
+            document.addEventListener('mouseup', onMouseUp)
+        };
+
+        onMounted(() => {
+            const resizeHandle = document.querySelector('.resize-handle')
+            resizeHandle.addEventListener('mousedown', onMouseDown)
+        })
+
+        return {filteredChats, searchQuery, selectChat, chatsContainter}
     },
 }
 </script>
 
 <template>
-    <div class="chats">
+    <div class="chats" ref="chatsContainter">
         <ChatsHeader v-model="searchQuery"></ChatsHeader>
-        <transition-group name="slide-fade" tag="div">
+        <transition-group name="slide-fade" tag="div" class="short-chats">
         <div class="short-chat" v-for="chat in filteredChats" :key="chat">
             <ChatCard :chat="chat" @click="selectChat(chat)"></ChatCard>
         </div>
         </transition-group>
+        <div class="resize-handle" @mousedown="onMouseDown"></div>
     </div>
 </template>
 
@@ -144,7 +174,7 @@ export default {
 }
 
 .chats {
-    background-color: black;
+    background-color: rgb(36, 36, 43);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -154,35 +184,40 @@ export default {
     align-items: flex-start;
     min-width: 200px;
     width: 300px;
-    max-width: 500px;
-    overflow: scroll;
-    resize: horizontal;
+    max-width: 600px;
+    resize: none;
     position: relative;
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 
-.chats::after{
-    content: "";
+.resize-handle {
     position: absolute;
     top: 0;
     bottom: 0;
     right: 0;
-    left: 0;
     width: 10px;
     cursor: ew-resize;
 }
 
-.short-chat {
-    /* box-shadow: 0 0 10px rgba(255, 69, 0, 0.5);  */
+.short-chats {
     display: flex;
     width: 100%;
     margin: 10px 0;
     color: whitesmoke;
-    border-radius: 15px;
     flex-direction: column;
+    border: 1px solid rgb(36, 36, 43);
+    border-radius: 20px;
+}
+
+.short-chat {
     cursor: pointer;
+    margin: 0 10px;
 }
 
 .short-chat:hover {
-    background-color: rgba(255, 255, 255, 0.2); /* осветление при наведении */
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
 }
 </style>

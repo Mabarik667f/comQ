@@ -37,7 +37,8 @@ export default {
 </script>
 
 <template>
-    <com-form @submit.prevent="handleLogin()">
+    <div class="login-page">
+    <com-form @submit.prevent="handleLogin()" class="login">
         <template v-slot:header>
             <div class="mb-3">
             <h2>Войти</h2>
@@ -75,6 +76,7 @@ export default {
             </div>
         </template>
     </com-form>
+    </div>
 </template>
 
 
@@ -92,4 +94,21 @@ export default {
     margin-left: 10px;
 }
 
+.login {
+    background-color: rgba(30, 30, 45);
+    color: whitesmoke;
+    width: 50%;
+    margin: auto;
+}
+
+.login-page {
+    background-color: rgba(30, 30, 45);
+    display: flex;
+    align-items: center;
+}
+
+.form-control:focus {
+    border-color: #a3a1a1;
+    box-shadow: none;
+}
 </style>

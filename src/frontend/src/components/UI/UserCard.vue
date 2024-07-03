@@ -56,7 +56,26 @@ export default {
 
 <template>
     <div class="user-on-settings">
-        {{ user }}
+        <div class="wrapper">
+                <img :src="user?.img" class="user-img">
+        </div>
+        <div class="user-info">
+            <div class="user-text">
+                <span class="user-name">{{ user?.name }}</span>
+                <div v-if="user?.is_online" class="online">
+                    Онлайн
+                </div>
+                <div v-else class="offline">
+                    Не в сети
+                </div>
+            </div>
+            <span v-if="user?.group_settings_has_user?.role === 'O'">
+                Владелец
+            </span>
+            <span v-else-if="user?.group_settings_has_user?.role === 'A'">
+                Админ
+            </span>
+        </div>
         <transition name="popup-fade">
             <com-popup 
                 v-if="popupTriggers.buttonTrigger" 
@@ -65,14 +84,14 @@ export default {
             </com-popup>
         </transition>
 
-        <div v-if="user.username == store.getters.getUserName && store.getters.getUserRole !== 'O'">
+        <div v-if="user?.username == store.getters.getUserName && store.getters.getUserRole !== 'O'">
             <com-button @click="togglePopup('buttonTrigger')">Покинуть</com-button>
         </div>
 
-        <div v-if="isAdmin() && user.username !== store.getters.getUserName">
+        <div v-if="isAdmin() && user?.username !== store.getters.getUserName">
             <com-button @click="deleteUser()">Исключить</com-button>
         </div>
-        <div v-if="store.state.userData.id == chat.host">
+        <div v-if="store.state.userData.id == chat?.host">
             
             <com-button v-if="user?.group_settings_has_user?.role === 'D'" @click="changeRole('A')">Выдать Админа</com-button>                        
             <com-button v-else-if="user?.group_settings_has_user?.role === 'A'" @click="changeRole('D')">Дефолт</com-button>
@@ -86,5 +105,37 @@ export default {
 }
 .popup-fade-enter-from, .popup-fade-leave-to {
     opacity: 0;
+}
+
+.user-on-settings {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+.user-info {
+    display: flex;
+    align-content: center;
+    justify-content: space-evenly;
+}
+
+.user-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-weight: bolder;
+}
+
+.wrapper {
+    max-width: 65px;
+    max-height: 65px;
+    margin: 5px;
+}
+
+.user-img {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
 }
 </style>

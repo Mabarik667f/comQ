@@ -11,7 +11,6 @@ export default async function getProfileData() {
         const response = await axiosInstance.get(`/v1/users/profile/${payload['user_id']}/`, {
         });
         userData.value = response.data;
-        console.log(response.data);
     } catch (error) {
         console.error(error);
     }

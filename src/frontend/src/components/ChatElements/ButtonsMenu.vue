@@ -79,8 +79,11 @@ export default {
     left: 10%;
     padding: 0;
     margin: 0;
-    border: 1px solid blue;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
     width: 200px;
+    color: whitesmoke;
+    background-color: rgb(36, 36, 43);
 }
 .menu[show] {
     opacity: 1;
@@ -91,10 +94,11 @@ export default {
     padding: 10px 15px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    border-radius: 15px;
 }
 
 .menu-item:hover {
-    background-color: #f5f5f5;
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .context-fade-enter-active, 

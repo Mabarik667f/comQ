@@ -57,7 +57,6 @@ export default {
             emit("showContextMenu", event, props.message)
         };
 
-
         return {user, store, messageDate, currentUserName, togglePopup, popupTriggers,
              showContextMenu, contextMenu, editMessage, deleteMessage}
     }
@@ -65,7 +64,6 @@ export default {
 </script>
 
 <template>
-    
     <div :class="{
         'system-message': message.system,
         'left': !message.system && message.user.username !== currentUserName,
@@ -76,11 +74,9 @@ export default {
         <div class="img-wrapper" v-if="!message.system && message.user.username !== store.getters.getUserName">
                     <img :src="message.user.img" class="user-img">
                 </div>
-                <!-- <com-context-menu :options="actions" ref="contextMenu" /> -->
             <div class="message-content">
                 <div v-if="!message.system">{{ message.user.name }}</div>
-                <div>{{ message.text_content }}</div>
-                <!-- <div v-if="!message.system">{{ message.reply }}</div> -->
+                <pre>{{ message.text_content }}</pre>
                 <div class="message-date" v-if="!message.system">
                     {{ messageDate }}
                 </div>
@@ -100,6 +96,7 @@ export default {
     text-align: left;
     margin: 5px 20px;
     padding: 5px;
+    color: whitesmoke;
 }
 .message-content {
     display: flex;
@@ -129,8 +126,12 @@ export default {
 }
 
 .system-message {
-    border: 5px blue solid;
+    border: 2px solid rgba(255, 255, 255, 0.4);
     text-align: center;
     align-self: center;
+}
+
+pre {
+    margin: 0;
 }
 </style>

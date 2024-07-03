@@ -8,7 +8,8 @@ export const userDataModule = {
         errors: {
             newPrivateChat: "",
             newGroupChat: ""
-        }
+        },
+        sidebarWidth: 0
     }),
 
     getters: {
@@ -23,6 +24,9 @@ export const userDataModule = {
         },
         getCreateErrors(state) {
             return state.errors
+        },
+        getSidebarWidth(state) {
+            return state.sidebarWidth
         }
     },
 
@@ -30,6 +34,9 @@ export const userDataModule = {
         setUserData(state, {username, id}) {
             state.username = username;
             state.id = id;
+        },
+        updateSidebarWidth(state, {width}) {
+            state.sidebarWidth = width
         },
         addRelatedUserMutation(state, {user}) {
             state.relatedUsers.push(user)

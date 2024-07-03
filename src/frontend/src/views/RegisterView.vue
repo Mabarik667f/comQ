@@ -43,7 +43,8 @@ export default {
 </script>
 
 <template>
-    <com-form @submit.prevent="registerHook">
+    <div class="register-page">
+    <com-form @submit.prevent="registerHook" class="register">
         <template v-slot:header>
             <div class="mb-3">
             <h2>Регистрация</h2>
@@ -108,7 +109,7 @@ export default {
         </div>
         </template>
     </com-form>
-    
+    </div>
 </template>
 <style scoped>
 .buttons {
@@ -119,5 +120,23 @@ export default {
 .login-button {
     margin-left: 20px;
     width: 100px;
+}
+
+.register {
+    background-color: rgba(30, 30, 45);
+    color: whitesmoke;
+    width: 50%;
+    margin: auto;
+}
+
+.register-page {
+    background-color: rgba(30, 30, 45);
+    display: flex;
+    align-items: center;
+}
+
+.form-control:focus {
+    border-color: #a3a1a1;
+    box-shadow: none;
 }
 </style>

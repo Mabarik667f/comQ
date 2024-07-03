@@ -1,5 +1,5 @@
 <template>
- <button class="btn btn-primary com__btn" :type="type">
+ <button :class="{'btn': true, 'btn-primary': true, 'com__btn': orange, 'no-bg': !orange}" :type="type">
     <slot></slot>
  </button>
 </template>
@@ -11,6 +11,10 @@ export default {
         type: {
             type: String,
             default: 'submit'
+        },
+        orange: {
+            type: Boolean,
+            default: true
         }
     }
 }
@@ -34,6 +38,18 @@ export default {
     --bs-btn-disabled-bg: orangered;
     --bs-btn-disabled-border-color: orangered;
     cursor: pointer;
+}
 
+.no-bg {
+    background-color: transparent !important;
+    border: none !important;
+    cursor: pointer;
+    --bs-btn-hover-bg: transparent !important;
+    --bs-btn-hover-border-color: transparent !important;
+    --bs-btn-active-bg: transparent !important;
+    --bs-btn-active-border-color: transparent !important;
+    --bs-btn-disabled-bg: transparent !important;
+    --bs-btn-disabled-border-color: transparent !important;
+    --bs-btn-focus-shadow-rgb: inherit;
 }
 </style>

@@ -2,7 +2,12 @@
 import toggleMixin from "@/mixins/toggleMixin"
 export default {
     name: 'com-dialog',
-    mixins: [toggleMixin]
+    mixins: [toggleMixin],
+    props: {
+        modalContentClass: {
+            type: String,
+        }
+    }
 }
 </script>
 
@@ -20,14 +25,14 @@ export default {
     bottom: 0;
     right: 0;
     left: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.7);
     position: fixed;
     display: flex;
 }
 
 .modal__content {
     margin: auto;
-    border-radius: 12px;
     padding: 20px;
+    width: 50%;
 }
 </style>

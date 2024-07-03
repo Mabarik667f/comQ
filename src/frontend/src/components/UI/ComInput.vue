@@ -31,5 +31,22 @@ export default {
 </script>
 
 <style scoped>
+input {
+    background-color: rgb(36, 36, 43);
+    border: 1px solid rgba(30, 30, 45);
+    color: whitesmoke;
+    cursor: text;
+}
 
+input:focus {
+    background-color: rgb(36, 36, 43);
+    border: 1px solid rgba(30, 30, 45);
+    color: whitesmoke;
+    cursor: text;
+}
+
+input::placeholder {
+    color: whitesmoke;
+    opacity: 0.4;
+}
 </style>

@@ -111,18 +111,20 @@ export default {
 
 <template>
     <div class="chats-header">
-        <com-button :class="'menu-button'" @click.stop="showMenu">&#9776;</com-button>
-        <ButtonsMenu
-        :show="menu"
-        @showUpdate="showMenu"
-        @private="showPrivateDialog"
-        @group="showGroupDialog"></ButtonsMenu>
+        <div class="support-elements">
+            <com-button :class="'menu-button'" :orange="false" @click.stop="showMenu">&#9776;</com-button>
+            <ButtonsMenu
+            :show="menu"
+            @showUpdate="showMenu"
+            @private="showPrivateDialog"
+            @group="showGroupDialog"></ButtonsMenu>
 
-        <com-input type="text" :value="searchQuery" placeholder="Поиск" class="search-input"
-        @input="updateSearchQuery"></com-input>
+            <com-input type="text" :value="searchQuery" placeholder="Поиск" class="form-control search-input"
+            @input="updateSearchQuery"></com-input>
+        </div>
 
-        <com-dialog v-model:show="privateAddVisible" class="privateChatCreate">
-            <com-form @submit.prevent="createPrivateChatHook()">
+        <com-dialog v-model:show="privateAddVisible">
+            <com-form @submit.prevent="createPrivateChatHook()" class="privateChatCreate">
                 <template v-slot:header>
                     <h2>Новый чат</h2>
                 </template>
@@ -142,9 +144,9 @@ export default {
             </com-form>
         </com-dialog>
 
-        <com-dialog v-model:show="groupAddVisible" class="groupChatCreate">
+        <com-dialog v-model:show="groupAddVisible">
             <p>Добавьте участников в группу</p>
-            <com-form @submit.prevent="createGroupChatHook()">
+            <com-form @submit.prevent="createGroupChatHook()" class="groupChatCreate">
                 <template v-slot:header>
                     <h2>Новая Группа</h2>
                 </template>
@@ -179,25 +181,37 @@ export default {
     display: flex;
     flex-direction: row;
     height: 7vh;
+    width: 100%;
 }
+
+.support-elements {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
 .menu-button {
-    --bs-btn-color: #333; /* Цвет текста кнопки (темно-серый) */
-    --bs-btn-bg: #f8f9fa; /* Цвет фона кнопки (светло-серый) */
-    --bs-btn-border-color: #ced4da; /* Цвет рамки кнопки (серый) */
-    --bs-btn-hover-color: #fff; /* Цвет текста при наведении (белый) */
-    --bs-btn-hover-bg: #6c757d; /* Цвет фона при наведении (темно-серый) */
-    --bs-btn-hover-border-color: #6c757d; /* Цвет рамки при наведении (темно-серый) */
-    --bs-btn-focus-shadow-rgb: 49, 132, 253; /* Тень при фокусе (синий) */
-    --bs-btn-active-color: #fff; /* Цвет текста при активном состоянии (белый) */
-    --bs-btn-active-bg: #343a40; /* Цвет фона при активном состоянии (темно-серый) */
-    --bs-btn-active-border-color: #343a40; /* Цвет рамки при активном состоянии (темно-серый) */
-    --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125); /* Тень при активном состоянии */
-    --bs-btn-disabled-color: #6c757d; /* Цвет текста для отключенного состояния (серый) */
-    --bs-btn-disabled-bg: #f8f9fa; /* Цвет фона для отключенного состояния (светло-серый) */
-    --bs-btn-disabled-border-color: #f8f9fa; /* Цвет рамки для отключенного состояния (светло-серый) */
+    margin: 5px;
+}
+
+.search-input {
+    margin: 10px;
+    border-radius: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
 }
 .newPrivate {
     width: 300px;
+}
+
+.form-control:focus {
+    border-color: #a3a1a1;
+    box-shadow: none;
+}
+
+.privateChatCreate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 </style>

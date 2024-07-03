@@ -70,7 +70,8 @@ export default {
 
 <template>
     <div class="group-settings">
-
+        <h4>Информация о группе</h4>
+        <div class="group-settings-wrapper">
         <div class="image-container">
             <img :src="chatData.groupSettings?.avatar || ''" class="image-content">
             <div v-if="isAdmin()" class="wrapper">
@@ -80,11 +81,13 @@ export default {
             </div>
         </div>
         <div>
+            <div class="group-name">{{ chatData?.groupSettings?.title }}</div>
             <label :for="'title'">Название: </label>
-            <div v-if="isAdmin()">
-                <com-input :id="'title'" v-model="formData.title"></com-input>
-                <com-button @click="updateTitle()">Изменить Название</com-button>
+            <div v-if="isAdmin()" class="input-group">
+                <com-input :id="'title'" v-model="formData.title" class="form-control"></com-input>
+                <com-button @click="updateTitle()">Изменить</com-button>
             </div>
+        </div>
         </div>
     </div>
 </template>
@@ -96,9 +99,19 @@ export default {
     align-items: center;
     justify-content: center;
 }
+
+.group-settings-wrapper {
+    display: flex;
+    align-items: center;
+}
 .image-content {
-    width: 200px;
+    width: 100px;
     border-radius: 50%;
+}
+
+.group-name {
+    font-weight: bolder;
+    font-size: 22px
 }
 .file-input {
     display: none;

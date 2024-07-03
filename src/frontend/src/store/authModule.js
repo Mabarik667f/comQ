@@ -91,7 +91,6 @@ export const authModule = {
         },
         checkTokenLifeTime({dispatch}) {
             const tokenData = jwtDecode(Cookies.get('access'));
-            console.log(tokenData.exp - Math.floor(Date.now() / 1000))
             if (tokenData.exp - Math.floor(Date.now() / 1000) <= 60) {
                 dispatch('refreshToken')
             }
