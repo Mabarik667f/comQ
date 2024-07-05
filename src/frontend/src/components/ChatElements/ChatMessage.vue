@@ -2,11 +2,14 @@
 import { ref } from 'vue';
 import { useStore } from 'vuex';
 export default {
-    emits: ['delete-message', 'edit-message', 'replyToMessage', 'showContextMenu'],
+    emits: ['delete-message', 'edit-message', 'replyToMessage', 'showContextMenu', 'goToMessage'],
     props: {
         message: {
             require: true,
             type: Object
+        },
+        chatType: {
+            require: true
         }
     },
 
@@ -22,6 +25,10 @@ export default {
         }
         const deleteMessage = () => {
             emit('delete-message', props.message);
+        }
+
+        const goToMessage = (id) => {
+            emit('goToMessage', id)
         }
 
         const formattedDate = () => {
@@ -58,7 +65,7 @@ export default {
         };
 
         return {user, store, messageDate, currentUserName, togglePopup, popupTriggers,
-             showContextMenu, contextMenu, editMessage, deleteMessage}
+             showContextMenu, contextMenu, editMessage, deleteMessage, goToMessage}
     }
 }
 </script>
@@ -68,21 +75,22 @@ export default {
         'system-message': message.system,
         'left': !message.system && message.user.username !== currentUserName,
         'right': !message.system && message.user.username === currentUserName,
-        'message': true
-        }" @contextmenu.prevent="showContextMenu"
-        >
-        <div class="img-wrapper" v-if="!message.system && message.user.username !== store.getters.getUserName">
-                    <img :src="message.user.img" class="user-img">
-                </div>
+        'message': true,
+        ['message-' + message.id]: true
+    }" @contextmenu.prevent="showContextMenu">
+    
             <div class="message-content">
-                <div v-if="!message.system">{{ message.user.name }}</div>
+                <div class="msg-author" v-if="!message.system && chatType === 'G'">{{ message.user.name }}</div>
+                <div v-if="message?.reply?.text_content" class="wrapper-reply" @click="goToMessage(message?.reply?.id)">
+                    <div class="msg-author" v-if="!message.system && chatType === 'G'">{{ message.user.name }}</div>
+                    <div class="msg-to-reply">{{ message?.reply?.text_content }}</div>
+                </div>
                 <pre>{{ message.text_content }}</pre>
                 <div class="message-date" v-if="!message.system">
                     {{ messageDate }}
                 </div>
             </div>
-        
-        
+
     </div>
 
 </template>
@@ -95,8 +103,9 @@ export default {
     max-width: 50%;
     text-align: left;
     margin: 5px 20px;
-    padding: 5px;
+    padding: 8px;
     color: whitesmoke;
+    position: relative;
 }
 .message-content {
     display: flex;
@@ -104,9 +113,19 @@ export default {
 }
 
 .message-date {
-    color: gray;
+    color: rgba(255, 255, 255, 0.4);
     font-size: 14px;
     align-self: flex-end;
+}
+
+.msg-author {
+    font-weight: bolder;
+}
+
+.msg-to-reply {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .left {
@@ -115,20 +134,44 @@ export default {
 
 .right {
     align-self: flex-end;
+    background-color: orangered;
 }
 
-.img-wrapper {
-    width: 65px;
+.wrapper-reply {
+    border: 1px blue solid;
+    padding: 5px;
+    flex-grow: 1;
+    background-color: rgb(224, 81, 29, 0.8);
+    border: 1px solid rgba(30, 30, 35);
+    border-left: 5px solid rgb(146, 42, 5);
+    border-radius: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
 }
-.user-img {
-    width: 100%;
-    border-radius: 50%;
+
+.highlighted {
+    animation: highlight 2s ease;
+}
+
+@keyframes highlight {
+    0% {
+        background-color: yellow;
+    }
+    100% {
+        background-color: transparent;
+    }
 }
 
 .system-message {
     border: 2px solid rgba(255, 255, 255, 0.4);
     text-align: center;
     align-self: center;
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50%;
+    max-width: none;
 }
 
 pre {

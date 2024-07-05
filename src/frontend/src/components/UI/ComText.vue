@@ -30,6 +30,7 @@ export default {
     border: 1px solid rgba(30, 30, 45);
     color: whitesmoke;
     cursor: text;
+    overflow: hidden;
 }
 
 .com-text:focus {
@@ -45,7 +46,6 @@ export default {
 }
 
 .form-control:focus {
-    border-color: #a3a1a1;
     box-shadow: none;
 }
 </style>

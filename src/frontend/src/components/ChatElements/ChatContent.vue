@@ -21,7 +21,7 @@ export default {
         const chat = computed(() => store.getters.getChat(chatId.value));
 
         const formData = ref({
-            message: '',
+            message: "",
             reply: null
         });
 
@@ -75,8 +75,6 @@ export default {
                         reply: formData.value.reply
                     })
                 );
-                formData.value.message = '';
-                cancelReply()
             }
         };
 
@@ -90,7 +88,6 @@ export default {
                     chat: chat.value.pk
                 })
             )
-            cancelEditMessage()
         }
 
         const deleteCandidat = ref(null);
@@ -169,6 +166,10 @@ export default {
             replyMessage.value = {};
         }
 
+        // const changeTextRows = () => {
+
+        // }
+
         const contextMenu = ref(null);
         const actions = ref([])
 
@@ -207,8 +208,9 @@ export default {
         }
 
         const messageRows = ref(1);
-        const handleShiftBackspace = (event) => {
-            if (event.shiftKey && messageRows.value > 1) {
+        const handleBackspace = () => {
+            const end = formData.value.message.length
+            if (messageRows.value > 1 && formData.value.message[end - 1] == "\n") {
                 messageRows.value -= 1;
             }
         }
@@ -219,9 +221,12 @@ export default {
                 messageRows.value = 1;
                 if (editingMessage.value.text_content) {
                     editMessage();
+                    cancelEditMessage()
                 } else {
                     addMessage();
+                    cancelReply()
                 }
+                formData.value.message = "";
             }
         };
 
@@ -238,28 +243,47 @@ export default {
             el.scrollTop = el.scrollHeight
         }
 
+        const scrollToMessage = async (msgId) => {
+            const msgElement = chatContainer.value.$el.querySelector(`.message-${msgId}`);
+            
+            msgElement.classList.add('highlighted');
+            setTimeout(() => {
+                msgElement.classList.remove('highlighted');
+            }, 2000);
+
+            msgElement.scrollIntoView({ behavior: "smooth" });
+        };
+
+
+
         onMounted(() => {
             const container = chatContainer.value.$el;
             container.addEventListener('scroll', handleScroll);
         });
 
         watch(() => (chat.value?.messages), () => {
-            if (isAtBottom.value) {
+            if (isAtBottom.value || chat.value?.last_message.user.username === store.getters.getUserName) {
                 nextTick(() => {
                     scrollToBottom()
                 })
             }
         }, {deep: true})
 
+        watch(() => (formData.value.message), () => {
+            if(formData.value.message.slice(0, 2) === "\n" && messageRows.value === 1) {
+                formData.value.message = "";
+            }
+        }, {deep: true})
+
         return {
-                chat, chatContainer, scrollToBottom, isAtBottom, messageRows, handleShiftBackspace,
+                chat, chatContainer, scrollToBottom, isAtBottom, messageRows, handleBackspace,
                 actions, contextMenu, showContextMenu,
                 popupTriggers, togglePopup,
                 addMessage, editMessage, deleteMessage,
                 deleteUserToRoom, deleteRoom, leaveUserToRoom, addUserToRoom,
                 setEditMessage, editingMessage, cancelEditMessage,
                 setReply, replyMessage, cancelReply,
-                formData, handleEnter};
+                formData, handleEnter, scrollToMessage};
     }
 };
 </script>
@@ -267,44 +291,52 @@ export default {
 <template>
     <div class="chat-content">
         <transition-group name="message" tag="div" class="chat-messages" ref="chatContainer">
-        <ChatMessage v-for="message in chat?.messages"
-            :key="message.id" :message="message"
-            @showContextMenu="showContextMenu"
+            <ChatMessage v-for="message in chat?.messages"
+                :key="message.id" :message="message"
+                :chatType="chat?.chat_type"
+                @showContextMenu="showContextMenu"
+                @goToMessage="scrollToMessage"
             ></ChatMessage>
         </transition-group>
 
-            <com-popup
-        v-if="popupTriggers.buttonTrigger"
-        :togglePopup="() => togglePopup('buttonTrigger')">
+        <com-popup v-if="popupTriggers.buttonTrigger"
+            :togglePopup="() => togglePopup('buttonTrigger')">
             <com-button @click="deleteMessage">Удалить</com-button>
         </com-popup>
 
         <div class="input-group new-message">
-            <div v-if="editingMessage.text_content">
-                <div>{{ editingMessage.text_content }}</div>
-                <com-button @click="cancelEditMessage">&#x2717;</com-button>
-            </div>
-            <div v-if="replyMessage.text_content">
-                <div>{{ replyMessage.text_content }}</div>
-                <com-button @click="cancelReply">&#x2717;</com-button>
-            </div>
             <div class="input-container">
-                <com-text class="new-message-input" v-model="formData.message"
-                :rows="messageRows" @keydown.enter="handleEnter"
-                @keydown.backspace="handleShiftBackspace"
-                placeholder="Новое сообщение"></com-text>
+                <div class="message-input-wrapper">
+                    <div v-if="editingMessage.text_content" class="edit-message">
+                        <div class="edited-message">{{ editingMessage.text_content }}</div>
+                        <com-button :orange="false" @click="cancelEditMessage">&#x2717;</com-button>
+                    </div>
+                    <div v-if="replyMessage.text_content" class="reply-message">
+                        <div class="replied-message">{{ replyMessage.text_content }}</div>
+                        <com-button :orange="false" @click="cancelReply">&#x2717;</com-button>
+                    </div>
+                    <com-text class="new-message-input" v-model="formData.message"
+                        :class="{ 'change-borders': editingMessage.text_content ||  formData.reply}"
+                        :rows="messageRows" @keydown.enter="handleEnter"
+                        @keydown.backspace="handleBackspace"
+                        placeholder="Новое сообщение">
+                    </com-text>
+                </div>
                 <transition name="slide-fade">
-                    <div class="input-group-append" v-if="formData.message">
+                    <div v-if="formData.message">
                         <com-button class="btn-send" @click="handleEnter">&#9658;</com-button>
                     </div>
                 </transition>
             </div>
+        </div>
 
         <transition name="context-fade">
             <context-menu :options="actions" ref="contextMenu" />
         </transition>
-
-        </div>
+        <transition name="slide-fade">
+            <com-button class="scroll-btn"
+                @click="scrollToBottom()" v-show="!isAtBottom">↓</com-button>
+        </transition>
     </div>
 </template>
 
@@ -327,8 +359,43 @@ export default {
 
 .input-container {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     width: 100%;
+    position: relative;
+    flex-direction: row;
+}
+
+.message-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.edit-message,
+.reply-message {
+    width: 100%;
+    padding-top: 5px;
+    display: flex;
+    color: whitesmoke;
+    justify-content: space-between;
+    background-color: rgb(36, 36, 43);
+    border-radius: 15px 15px 0 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.edited-message,
+.replied-message {
+    padding: 5px;
+    flex-grow: 1;
+    background-color: rgb(224, 81, 29, 0.8);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    border: 1px solid rgba(30, 30, 35);
+    border-left: 5px solid orangered;
+    border-radius: 5px;
 }
 
 .chat-content {
@@ -337,11 +404,10 @@ export default {
     height: 93%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     position: relative;
 }
 
-.chat-messages{
+.chat-messages {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -354,19 +420,32 @@ export default {
     width: 20px;
 }
 
-.btn-attachment,
-.btn-send {
+.btn-attachment {
     border-radius: 0%;
 }
 
+.btn-send {
+    border-radius: 50%;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
 .new-message {
-    width: 100%;
     display: flex;
     position: sticky;
     margin-top: 5px;
     margin-bottom: 20px;
-    border: 1px solid rgba(30, 30, 45);
-    border-radius: 20px;
+}
+
+.change-borders {
+    border-top: none !important;
+    margin-top: 0;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+}
+
+.new-message-input {
+    width: 100%;
 }
 
 .input-group {
@@ -383,4 +462,27 @@ export default {
     opacity: 0;
 }
 
+.scroll-btn {
+    right: 0;
+    bottom: 0;
+    margin: 20px;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 100px;
+    position: fixed !important;
+    font-size: 30px;
+    font-weight: bolder;
+    border: 1px orangered solid; 
+    border-radius: 50% !important;
+    display: flex;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+}
+
+@media screen and (max-width: 750px) {
+    .scroll-btn {
+        display: none;
+    }
+}
 </style>

@@ -46,7 +46,7 @@ export default {
         </template>
         <template v-slot:fields>
             <div class="mb-3">
-            <label for="emailInput" class="form-label">Email</label>
+            <label for="emailInput" class="form-label">Логин или Email</label>
                 <com-input
                 required
                 v-model="formData.login"
@@ -105,10 +105,18 @@ export default {
     background-color: rgba(30, 30, 45);
     display: flex;
     align-items: center;
+    
 }
 
 .form-control:focus {
     border-color: #a3a1a1;
     box-shadow: none;
+}
+
+@media screen and (max-width: 768px) {
+    .login {
+        width: 90%;
+        padding: 10px;
+    }
 }
 </style>

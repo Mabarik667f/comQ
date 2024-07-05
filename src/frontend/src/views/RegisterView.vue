@@ -139,4 +139,11 @@ export default {
     border-color: #a3a1a1;
     box-shadow: none;
 }
+
+@media screen and (max-width: 768px) {
+    .register {
+        width: 90%;
+        padding: 10px;
+    }
+}
 </style>
