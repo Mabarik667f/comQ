@@ -61,7 +61,7 @@ export default {
             ws.onmessage = function(e) {
                 const data = JSON.parse(e.data);
                 if (data.message) {
-                    createMessage(data.message, id)  
+                    createMessage(data.chat_title, data.message, id)  
                 } else if (data.deleted_message && data.delete_author) {
                     store.dispatch('deleteMessage', {chatId: id, message: data.deleted_message})
 
@@ -72,7 +72,6 @@ export default {
                 } else if (data.edited_message) {
                     store.dispatch('editMessage', {chatId: id, message: data.edited_message})
                 } else if (data.deleted_chat) {
-                    console.log(data.deleted_chat)
                     store.commit('deleteChat', {chatId: id})
                 } else if (data.clear_notifications) {
                     store.commit('clearNotifications', {chatId: id})

@@ -73,9 +73,9 @@ export default {
             if (store.getters.getUserName === data.leaved_user.username) {
                 store.commit('deleteChat', {chatId: chatId.value})
             }
-        } else if (data.chat) {
-          if (data.chat.current_users.some(currentUser => currentUser.username === store.getters.getUserName)) {
-              addChat(data.chat)
+        } else if (data.new_chat) {
+          if (data.new_chat.current_users.some(currentUser => currentUser.username === store.getters.getUserName)) {
+              addChat(data.new_chat)
               store.commit('updateCreateGroupError', {error: ""})
               store.commit('updateCreatePrivateError', {error: ""})
             }

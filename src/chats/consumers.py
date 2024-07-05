@@ -33,6 +33,18 @@ class ConsumersMethods:
         return Chat.objects.get(pk=chat_pk)
 
     @database_sync_to_async
+    def get_chat_title(self, chat_pk):
+        chat: Chat = Chat.objects.get(pk=chat_pk)
+        if chat.chat_type == 'G':
+            group_settings = GroupSettings.objects.get(chat=chat)
+            title = group_settings.title
+        else:
+            partner = UserToChat.objects.filter(chat_id=chat.pk).exclude(user_id=self.user.id)[0]
+            partner_obj = CustomUser.objects.get(pk=partner.user_id)
+            title = partner_obj.name
+        return title
+
+    @database_sync_to_async
     def save_group_channel_name(self, channel_name, chat_id):
         cache.set(f"channel_{chat_id}", channel_name, timeout=None)
 
@@ -124,7 +136,7 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
                                          user_pk=deleted_user['id'],
                                          method="delete")
 
-        await self.send_message(message, chat_pk=content.get('chat_pk'), chat=chat)
+        await self.send_message(message, chat_pk=content.get('chat_pk'))
 
     async def handle_leave_user(self, content):
 
@@ -141,7 +153,7 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
                                          user_pk=self.scope['user'].pk,
                                          method="leave")
 
-        await self.send_message(message, chat_pk=content.get('chat_pk'), chat=chat)
+        await self.send_message(message, chat_pk=content.get('chat_pk'))
 
     async def handle_add_users(self, content):
         new_users, messages = await self.add_users(users=content.get('users'),
@@ -153,7 +165,7 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
                        "chat": chat}
         )
         for message in messages:
-            await self.send_message(message, chat_pk=content.get('chat_pk'), chat=chat)
+            await self.send_message(message, chat_pk=content.get('chat_pk'))
 
     async def handle_create_chat(self, content):
 
@@ -172,19 +184,19 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
                            "chat": chat}
             )
 
-    async def send_message(self, message, chat_pk, chat, **kwargs):
+    async def send_message(self, message, chat_pk, **kwargs):
+        chat_title = await self.methods.get_chat_title(chat_pk)
         channel_group = f"chat_{chat_pk}"
         event = {"type": "chat.message",
                  "message": message,
-                 "chat_pk": chat_pk,
-                 "chat": chat,
+                 "chat_title": chat_title,
                  **kwargs}
         await self.channel_layer.group_send(
             channel_group, event
         )
 
     async def chat_new_chat(self, event):
-        await self.send_json({"chat": event.get('chat')})
+        await self.send_json({"new_chat": event.get('chat')})
 
     async def chat_error(self, event):
         content = {"error": event.get('error'), "chat_type": event.get('chat_type')}
@@ -198,11 +210,6 @@ class HubConsumer(AsyncJsonWebsocketConsumer):
 
     async def chat_add_users(self, event):
         await self.send_json({"new_users": event['new_users'], "chat": event['chat']})
-
-    async def chat_message(self, event):
-        if self.scope['user'].pk != int(event['message']['user']['id']):
-            await self.methods.update_notifications(chat_pk=event['chat_pk'])
-        await self.send_json({"message": event['message'], "chat": event['chat']})
 
     async def force_user_disconnect(self, chat_pk, user_pk, method):
         if self.scope['user'].pk == user_pk and method == 'leave':
@@ -355,9 +362,11 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def handle_message(self, content):
         new_message = await self.methods.create_message(content['message'], reply=content['reply'],
                                                         chat=self.chat_pk)
+        chat_title = await self.methods.get_chat_title(self.chat_pk)
         await self.channel_layer.group_send(
             self.chat_group, {"type": "chat.message",
-                              "message": new_message}
+                              "message": new_message,
+                              "chat_title": chat_title}
         )
 
     async def handle_delete_message(self, content):
@@ -395,7 +404,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def chat_message(self, event):
         if self.scope['user'].pk != int(event['message']['user']['id']):
             await self.methods.update_notifications(chat_pk=self.chat_pk)
-        await self.send_json({"message": event['message']})
+        await self.send_json({"message": event['message'], "chat_title": event['chat_title']})
 
     async def chat_delete_message(self, event):
         if self.scope['user'].pk != int(event['message']['user']['id'])\
