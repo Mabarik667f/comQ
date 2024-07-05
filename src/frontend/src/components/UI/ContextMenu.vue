@@ -104,9 +104,9 @@ export default {
     z-index: 9999;
     overflow: hidden;
     background-color: rgb(36, 36, 43);
-    border-radius: 5px;
     padding: 10px;
     color: whitesmoke;
+    border-radius: 15px;
 }
 
 .context-menu:focus {
@@ -139,4 +139,6 @@ li:hover {
 .context-fade-leave-to {
     opacity: 0;
 }
+
+
 </style>

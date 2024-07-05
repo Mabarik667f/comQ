@@ -100,6 +100,7 @@ export default {
 
 <style scoped>
 
+
 .chat-header{
     background-color: rgb(36, 36, 43);
     width: 100%;
@@ -123,6 +124,9 @@ export default {
 .header {
     font-weight: bolder;
     align-self: flex-start;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 .chat-img {
     max-width: 60px;

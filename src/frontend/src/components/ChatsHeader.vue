@@ -1,5 +1,4 @@
 <script>
-import Multiselect from 'vue-multiselect'
 import ButtonsMenu from "@/components/ChatElements/ButtonsMenu.vue"
 import { ref, computed } from "vue";
 import { useStore } from "vuex";
@@ -9,7 +8,6 @@ import Cookies from 'js-cookie';
 
 export default {
     components: {
-        Multiselect,
         ButtonsMenu
     },
     props: {
@@ -57,11 +55,11 @@ export default {
             )
         }
 
-        const showPrivateDialog = (event) => {
-            privateAddVisible.value = event;
+        const showPrivateDialog = () => {
+            privateAddVisible.value = !privateAddVisible.value;
         }
-        const showGroupDialog = (event) => {
-            groupAddVisible.value = event;
+        const showGroupDialog = () => {
+            groupAddVisible.value = !groupAddVisible.value;
         }
 
         const createPrivateForm = ref({
@@ -76,7 +74,14 @@ export default {
         })
 
         const menu = ref(false);
-        const showMenu = () => {
+        const buttonPosition = ref({ top: 0, left: 0 });
+        const showMenu = (event) => {
+            if (event?.target?.getBoundingClientRect) {
+                buttonPosition.value = {
+                top: event.target.getBoundingClientRect().bottom,
+                left: event.target.getBoundingClientRect().left,
+            };
+            }
             menu.value = !menu.value
         }
 
@@ -84,7 +89,22 @@ export default {
             emit('update:modelValue', event.target.value);
         }
 
+        const updateGroupFormData = (currentUsers) => {
+            createGroupForm.value.currentUsers = currentUsers;
+        }
+
         const relatedUsers = store.getters.getRelatedUsers;
+
+        const logout = () => {
+            store.dispatch("logout");
+        }
+
+        const actions = ref([
+            {"name": 'Профиль', "to": '/profile'},
+            {"name": "Новая группа", "event": showGroupDialog},
+            {"name": "Новый чат", "event": showPrivateDialog},
+            {"name": 'Выйти', "event": logout}
+        ])
 
         return {
             createPrivateForm, 
@@ -97,13 +117,16 @@ export default {
             showGroupDialog,
             privateAddVisible,
             groupAddVisible,
+            buttonPosition,
 
             relatedUsers,
             errors,
             store,
             menu,
             showMenu,
-            updateSearchQuery
+            updateSearchQuery,
+            updateGroupFormData,
+            actions
         }
     }    
 }
@@ -115,9 +138,9 @@ export default {
             <com-button :class="'menu-button'" :orange="false" @click.stop="showMenu">&#9776;</com-button>
             <ButtonsMenu
             :show="menu"
-            @showUpdate="showMenu"
-            @private="showPrivateDialog"
-            @group="showGroupDialog"></ButtonsMenu>
+            :options="actions"
+            :position="buttonPosition"
+            @showUpdate="showMenu"></ButtonsMenu>
 
             <com-input type="text" :value="searchQuery" placeholder="Поиск" class="form-control search-input"
             @input="updateSearchQuery"></com-input>
@@ -158,14 +181,9 @@ export default {
                     :placeholder="'Party'"
                     v-model="createGroupForm.title"
                     required></com-input>       
-
-                    <label class="typo__label">Tagging</label>
-                        <multiselect c v-model="createGroupForm.currentUsers"
-                        required
-                        placeholder="Кого добавим?" tag-placeholder="Участник" label="name"
-                        track-by="value" :options="relatedUsers"
-                        :multiple="true" :taggable="true" @tag="addTag">
-                    </multiselect>
+                        <com-tagging :options="relatedUsers" v-model="createGroupForm.currentUsers"
+                        @updateCurrentUsers="updateGroupFormData">
+                        </com-tagging>
                     </div>
                 </template>
                 <template v-slot:button>
@@ -212,6 +230,10 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.multiselect {
+    border: 1px solid blue;
 }
 
 </style>

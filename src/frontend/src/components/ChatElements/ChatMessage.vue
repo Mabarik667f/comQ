@@ -138,7 +138,6 @@ export default {
 }
 
 .wrapper-reply {
-    border: 1px blue solid;
     padding: 5px;
     flex-grow: 1;
     background-color: rgb(224, 81, 29, 0.8);
@@ -166,12 +165,10 @@ export default {
     border: 2px solid rgba(255, 255, 255, 0.4);
     text-align: center;
     align-self: center;
-    margin: auto;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 50%;
-    max-width: none;
 }
 
 pre {

@@ -1,6 +1,5 @@
 <script>
 import router from '@/router';
-import { useStore } from 'vuex';
 import { ref, onMounted, onUnmounted } from 'vue';
 export default {
     emits: ["group", "private", "showUpdate"],
@@ -8,31 +7,18 @@ export default {
         show: {
             type: Boolean,
             default: false
+        },
+        options: {
+            type: Object,
+            required: true
+        },
+        position: {
+            type: Object
         }
     },
     setup(props, {emit}) {
 
-        const store = useStore();
         const menuRef = ref(null)
-
-        const showPrivateDialog = () => {
-            emit("private", true);
-        }
-
-        const showGroupDialog = () => {
-            emit("group", true);
-        }
-
-        const logout = () => {
-            store.dispatch("logout");
-        }
-
-        const actions = ref([
-            {"name": 'Профиль', "to": '/profile'},
-            {"name": "Новая группа", "event": showGroupDialog},
-            {"name": "Новый чат", "event": showPrivateDialog},
-            {"name": 'Выйти', "event": logout}
-        ])
 
         const handleOutsideClick = (event) => {
             if (menuRef.value && !menuRef.value.contains(event.target)) {
@@ -54,17 +40,19 @@ export default {
             } else {
                 router.push(action.to)
             }
+            emit('showUpdate', false);
         }
 
-        return {actions, handleClick, menuRef};
+        return {handleClick, menuRef};
     }
 }
 </script>
 
 <template>
     <transition-group name="context-fade">
-    <ul class="menu" v-if="show" ref="menuRef">
-        <li v-for="action in actions" :key="action.name" class="menu-item" @click="handleClick(action)">
+    <ul class="menu" v-if="show" ref="menuRef" :style="{ top: `${position.top}px`, left: `${position.left}px` }">
+        <li v-for="action in options" 
+        :key="action.name" class="menu-item" @click="handleClick(action)">
             {{ action.name }}
         </li>
     </ul>
@@ -73,10 +61,8 @@ export default {
 
 <style scoped>
 .menu {
-    list-style: none;
     position: absolute;
-    top: 5%;
-    left: 10%;
+    list-style: none;
     padding: 0;
     margin: 0;
     border: 1px solid rgba(255, 255, 255, 0.3);

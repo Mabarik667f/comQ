@@ -13,7 +13,7 @@ export default {
             require: true
         }
     },
-    emits: ['changeRole', 'leaveUser', 'deleteUser'],
+    emits: ['showContextMenu'],
     setup(props, {emit}) {
         
         const user = ref(props.user);
@@ -28,18 +28,6 @@ export default {
         watch(() => (props.user), (newUser) => {
             user.value = newUser;
         })
-
-        const changeRole = (role) => {
-            emit('changeRole', {role: role, user: user.value.id})
-        }
-
-        const leaveUser = () => {
-            emit('leaveUser')
-        }
-
-        const deleteUser = () => {
-            emit('deleteUser', user.value)
-        }
         
         const popupTriggers = ref({
             buttonTrigger: false
@@ -49,13 +37,18 @@ export default {
             popupTriggers.value[trigger] = !popupTriggers.value[trigger]
         }
 
-        return {changeRole, leaveUser, deleteUser, store, chat, isAdmin, popupTriggers, togglePopup}
+        const showContextMenu = (event) => {
+            emit("showContextMenu", event, props.user)
+        };
+
+        return {store, chat, isAdmin, popupTriggers, 
+            togglePopup, showContextMenu}
     }
 }
 </script>
 
 <template>
-    <div class="user-on-settings">
+    <div class="user-on-settings" @contextmenu.prevent="showContextMenu">
         <div class="wrapper">
                 <img :src="user?.img" class="user-img">
         </div>
@@ -69,10 +62,10 @@ export default {
                     Не в сети
                 </div>
             </div>
-            <span v-if="user?.group_settings_has_user?.role === 'O'">
+            <span v-if="user?.group_settings_has_user?.role === 'O'" class="role">
                 Владелец
             </span>
-            <span v-else-if="user?.group_settings_has_user?.role === 'A'">
+            <span v-else-if="user?.group_settings_has_user?.role === 'A'" class="role">
                 Админ
             </span>
         </div>
@@ -86,15 +79,6 @@ export default {
 
         <div v-if="user?.username == store.getters.getUserName && store.getters.getUserRole !== 'O'">
             <com-button @click="togglePopup('buttonTrigger')">Покинуть</com-button>
-        </div>
-
-        <div v-if="isAdmin() && user?.username !== store.getters.getUserName">
-            <com-button @click="deleteUser()">Исключить</com-button>
-        </div>
-        <div v-if="store.state.userData.id == chat?.host">
-            
-            <com-button v-if="user?.group_settings_has_user?.role === 'D'" @click="changeRole('A')">Выдать Админа</com-button>                        
-            <com-button v-else-if="user?.group_settings_has_user?.role === 'A'" @click="changeRole('D')">Дефолт</com-button>
         </div>
     </div>
 </template>
@@ -112,10 +96,18 @@ export default {
     flex-direction: row;
     align-items: center;
 }
+
 .user-info {
+    width: 100%;
     display: flex;
-    align-content: center;
-    justify-content: space-evenly;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-left: 10px;
+}
+
+.role {
+    margin-left: auto;
+    margin-right: 10px;
 }
 
 .user-text {

@@ -5,6 +5,7 @@ import isAdmin from "@/hooks/permissionHooks/isAdmin"
 
 import { useStore } from 'vuex';
 export default {
+
     props: {
         groupSettings: {
             require: true
@@ -63,7 +64,10 @@ export default {
             }
         });
 
-        return { chatData, showUpload, formData, store, updateImage, updateTitle, handleImageChange, isAdmin, avatarWatch };
+    
+
+        return { chatData, showUpload, formData, store,
+            updateImage, updateTitle, handleImageChange, isAdmin, avatarWatch };
     }
 }
 </script>
@@ -82,7 +86,6 @@ export default {
         </div>
         <div>
             <div class="group-name">{{ chatData?.groupSettings?.title }}</div>
-            <label :for="'title'">Название: </label>
             <div v-if="isAdmin()" class="input-group">
                 <com-input :id="'title'" v-model="formData.title" class="form-control"></com-input>
                 <com-button @click="updateTitle()">Изменить</com-button>
@@ -98,6 +101,7 @@ export default {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    margin-bottom: 20px;
 }
 
 .group-settings-wrapper {
@@ -106,12 +110,20 @@ export default {
 }
 .image-content {
     width: 100px;
+    height: 100px;
     border-radius: 50%;
+}
+
+.input-group {
+    margin-top: 5px;
 }
 
 .group-name {
     font-weight: bolder;
-    font-size: 22px
+    font-size: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 .file-input {
     display: none;
@@ -123,6 +135,7 @@ export default {
 
 .image-container{
     position: relative;
+    margin-right: 10px;
 } 
 
 .wrapper {
@@ -146,5 +159,10 @@ export default {
     font-size: 50px;
     cursor: pointer;
 
+}
+
+.form-control:focus {
+    border-color: #a3a1a1;
+    box-shadow: none;
 }
 </style>

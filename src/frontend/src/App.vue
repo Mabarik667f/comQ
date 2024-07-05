@@ -80,11 +80,11 @@ nav a {
 }
 
 .online {
-    color: orangered;
+    color: green;
 }
 
 .offline {
-    color:rgba(255, 255, 255, 0.3);
+    color: red;
 }
 
 </style>

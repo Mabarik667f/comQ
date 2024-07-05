@@ -41,6 +41,12 @@ export const chatsModule = {
             state.websockets[id] = ws
         },
 
+        changeUserRole(state, {chatId, userId, role}) {
+            const chat = state.chats.find(chat => chat.pk === chatId);
+            const user = chat.current_users.find(u => u.id === userId);
+            user.group_settings_has_user.role = role;
+        },
+
         updateChats(state, {chat}) {
             state.chats.unshift(chat);
         },

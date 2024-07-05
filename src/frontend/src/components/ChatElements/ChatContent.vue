@@ -262,7 +262,7 @@ export default {
         });
 
         watch(() => (chat.value?.messages), () => {
-            if (isAtBottom.value || chat.value?.last_message.user.username === store.getters.getUserName) {
+            if (isAtBottom.value || chat.value?.last_message?.user?.username === store.getters.getUserName) {
                 nextTick(() => {
                     scrollToBottom()
                 })
@@ -301,7 +301,8 @@ export default {
 
         <com-popup v-if="popupTriggers.buttonTrigger"
             :togglePopup="() => togglePopup('buttonTrigger')">
-            <com-button @click="deleteMessage">Удалить</com-button>
+            <com-button @click="deleteMessage" :orange="false"
+            style="color: orangered; font-weight: bolder;">Удалить</com-button>
         </com-popup>
 
         <div class="input-group new-message">
