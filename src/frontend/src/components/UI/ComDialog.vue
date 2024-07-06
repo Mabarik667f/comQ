@@ -28,6 +28,7 @@ export default {
     background: rgba(0,0,0,0.7);
     position: fixed;
     display: flex;
+    color: whitesmoke;
 }
 
 .modal__content {

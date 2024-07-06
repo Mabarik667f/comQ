@@ -4,7 +4,6 @@ import ChatContent from "@/components/ChatElements/ChatContent.vue";
 import ChatGroupSettingsChange from "@/components/ChatElements/ChatGroupSettingsChange.vue";
 import ButtonsMenu from './ChatElements/ButtonsMenu.vue';
 import UserCard from '@/components/UI/UserCard.vue';
-import Multiselect from 'vue-multiselect'
 
 import { ref, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
@@ -18,7 +17,6 @@ export default {
         ChatHeader,
         ChatContent,
         ChatGroupSettingsChange,
-        Multiselect,
         UserCard,
         ButtonsMenu
     },
@@ -53,6 +51,12 @@ export default {
         watch(() => (chat.value?.current_users), () => {
             if (chat?.value) {
                 fetchData();
+            }
+        }, {deep: true})
+
+        watch(() => (relatedUsers.value), () => {
+            if (chat?.value) {
+                fetchData()
             }
         }, {deep: true})
 
@@ -140,6 +144,10 @@ export default {
             menu.value = !menu.value
         }
 
+        const updateAddedUsers = (currentUsers) => {
+            addedUsers.value = currentUsers;
+        }
+
         
         return {chat,
                 chatId,
@@ -155,6 +163,7 @@ export default {
                 buttonsMenuActions,
                 showMenu,
                 menu,
+                updateAddedUsers,
 
                 popupTriggers,
                 togglePopup,
@@ -200,15 +209,11 @@ export default {
                     <ChatGroupSettingsChange
                     :groupSettings="chat?.groupSettings" :chatId="parseInt(chatId)"></ChatGroupSettingsChange>
                     <div v-if="chat && chat.chat_type === 'G'">
-                        <div class="add-users" v-if="isAdmin()">
-                            <label class="typo__label">Tagging</label>
-                            <multiselect c v-model="addedUsers"
-                            required
-                            placeholder="Кого добавим?" tag-placeholder="Участник" label="name"
-                            track-by="value" :options="relatedUsersInGroup"
-                            :multiple="true" :taggable="true" @tag="addTag">
-                        </multiselect>
-                            <com-button v-if="addedUsers.length > 0" @click=addUserToRommHook()>Добавить</com-button>
+                        <div class="add-users mb-3" v-if="isAdmin()">
+                            <com-tagging :options="relatedUsersInGroup" :isChat="true" v-model="addedUsers"
+                                @updateCurrentUsers="updateAddedUsers"
+                                @addUserToRommHook="addUserToRommHook" class="select-users">
+                            </com-tagging>
                         </div>
                         <div v-for="user in chat?.current_users" :key="user">
                             <UserCard :user="user" :chatId="parseInt(chatId)" 
@@ -246,7 +251,9 @@ export default {
 </template>
 
 <style scoped>
-
+.select-users {
+    flex: 1;
+}
 .button-wrapper {
     margin-left: auto;
 }
@@ -260,7 +267,6 @@ export default {
     background-color: rgb(30, 30, 35);
 }
 
-
 .chat-settings {
     border: 1px rgb(30, 30, 45) solid;
     background-color: rgb(41, 39, 38);
@@ -269,8 +275,8 @@ export default {
     overflow-y: auto;
     height: 95vh;
     overflow: scroll;
-    width: 50% !important;
-    margin: auto !important;
+    width: 50%;
+    margin: auto;
     padding: 15px
 }
 
@@ -279,5 +285,21 @@ export default {
 }
 .popup-fade-enter-from, .popup-fade-leave-to {
     opacity: 0;
+}
+
+@media (max-width: 768px) {
+    .chat-settings {
+        width: 100%;
+    }
+    .com-dialog {
+        width: 90% !important;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    :deep(.modal__content) {
+        padding: 5px !important;
+        width: 60% !important;
+    }
 }
 </style>

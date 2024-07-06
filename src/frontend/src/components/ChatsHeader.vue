@@ -35,6 +35,7 @@ export default {
                             "host": jwtDecode(Cookies.get('access'))['user_id']}
                 })
             )
+            showPrivateDialog()
         }
 
 
@@ -53,6 +54,7 @@ export default {
                     "title": createGroupForm.value.title
                 })
             )
+            showGroupDialog()
         }
 
         const showPrivateDialog = () => {
@@ -149,16 +151,20 @@ export default {
         <com-dialog v-model:show="privateAddVisible">
             <com-form @submit.prevent="createPrivateChatHook()" class="privateChatCreate">
                 <template v-slot:header>
-                    <h2>Новый чат</h2>
+                    <div class="mb-4">
+                    <h2 class="form-header">Новый чат</h2>
+                    </div>
                 </template>
                 <template v-slot:fields>
+                    <div class="mb-4">
                     <span v-if="errors.newPrivateChat" class="form-errors">{{ errors.newPrivateChat }}</span>
-                    <label :for="'newPrivateChat'">Идентификатор</label>
+                    <label :for="'newPrivateChat'">Уникальное имя пользователя</label>
                     <com-input :id="'newPrivateChat'" 
                     class="form-control newPrivate"
                     :placeholder="'Ivan1234'"
                     v-model="createPrivateForm.username"
                     required></com-input>
+                    </div>
 
                 </template>
                 <template v-slot:button>
@@ -168,19 +174,23 @@ export default {
         </com-dialog>
 
         <com-dialog v-model:show="groupAddVisible">
-            <p>Добавьте участников в группу</p>
             <com-form @submit.prevent="createGroupChatHook()" class="groupChatCreate">
                 <template v-slot:header>
-                    <h2>Новая Группа</h2>
+                    <div class="mb-4">
+                    <h2 class="form-header">Новая Группа</h2>
+                    </div>
                 </template>
                 <template v-slot:fields>
-                    <div>
-                    <label :for="'newGroupChat'">Название группы</label>
-                    <com-input :id="'newGroupChat'" 
-                    class="form-control"
-                    :placeholder="'Party'"
-                    v-model="createGroupForm.title"
-                    required></com-input>       
+                    <div class="mb-4">
+                        <label :for="'newGroupChat'">Название группы</label>
+                        <com-input :id="'newGroupChat'" 
+                        class="form-control"
+                        :placeholder="'Party'"
+                        v-model="createGroupForm.title"
+                        required></com-input>  
+                    </div>
+
+                    <div class="mb-4">     
                         <com-tagging :options="relatedUsers" v-model="createGroupForm.currentUsers"
                         @updateCurrentUsers="updateGroupFormData">
                         </com-tagging>
@@ -227,13 +237,40 @@ export default {
 }
 
 .privateChatCreate {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: auto;
 }
 
-.multiselect {
-    border: 1px solid blue;
+:deep .multiselect {
+    max-width: 250px !important;
+}
+
+@media (max-width: 768px) {
+    .com-dialog {
+        width: 90% !important;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    :deep .modal__content {
+        padding: 5px !important;
+        width: 60% !important;
+    }
+
+    .form-header {
+        font-size: 1.5em;
+    }
+
+    .form-control {
+        width: 100%;
+    }
+
+    .privateChatCreate, .groupChatCreate {
+        width: 100%;
+    }
+
+    .newPrivate, .search-input {
+        width: 100%;
+    }
 }
 
 </style>

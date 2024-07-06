@@ -29,35 +29,6 @@ export default {
       } else {
           chatData.value.chatImg = chat.value?.partner?.img;
       }
-
-      // const card = ref(null)
-      // const sidebarWidth = computed(() => store.getters.getSidebarWidth)
-      // const truncatedMessage = ref("");
-
-      // const updateTruncatedMessage = () => {
-      //   if (!card.value) {
-      //     truncatedMessage.value = chat.value.last_message.text_content;
-      //     return
-      //   }
-
-      //   const maxCharsPerWidth = 20;
-      //   const maxMessageLength = Math.floor(card.value.clientWidth / maxCharsPerWidth);
-      //   const text = chat.value.last_message.text_content;
-
-      //   if (text.length> maxMessageLength) {
-      //     truncatedMessage.value = text.slice(0, maxMessageLength) + '...';
-      //   } else {
-      //     truncatedMessage.value = text;
-      //   }
-      // };
-
-      // watchEffect(() => {
-      //   updateTruncatedMessage();
-      // });
-
-      // watch(sidebarWidth, () => {
-      //   updateTruncatedMessage();
-      // }, {immediate: true});
     
     return {chatData}
   }
@@ -77,12 +48,12 @@ export default {
         {{ chat.groupSettings?.title || "Загрузка..." }}
       </span>
       <div class="last-message">
-        <label :for="'msg-text'" v-if="chat.last_message.user && chat.chat_type === 'G'">{{ chat.last_message.user.name }}: </label>
-        <p :id="'msg-text'" class="message">{{chat?.last_message.text_content}}</p>
+        <label :for="'msg-text'" v-if="chat?.last_message?.user && chat.chat_type === 'G' && !chat?.last_message.system">{{ chat.last_message.user.name }}:</label>
+        <div :id="'msg-text'" class="message">{{chat?.last_message.text_content}}</div>
       </div>
     </div>
-    <div class="notifications">
-      {{ chat.notifications }}
+    <div class="notifications" v-if="chat?.notifications > 0">
+      {{ chat?.notifications }}
     </div>
   </div>
 </template>
@@ -92,7 +63,9 @@ export default {
   display: flex;
   flex-direction: row;
   align-content: center;
+  align-items: center;
   justify-content: space-evenly;
+  margin-bottom: 10px;
 }
 
 .card-img {
@@ -104,9 +77,9 @@ export default {
 
 .chat-info {
   flex-grow: 1;
-}
-
-.chat-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .short-chat-img {
@@ -120,13 +93,19 @@ export default {
   border-radius: 50%;
   background-color: orangered;
   width: 30px;
+  height: 30px;
   text-align: center;
-  margin-right: 5px;
+  line-height: 30px;
+  color: white;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-left: 10px;
 }
 
 .last-message {
   display: flex;
   flex-direction: row;
+  overflow: hidden;
 }
 
 .message {
@@ -134,6 +113,8 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  width: 70px;
+  margin-left: 3px;
+  width: 100%;
+  flex-grow: 1;
 }
 </style>

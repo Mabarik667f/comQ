@@ -80,7 +80,7 @@ export default {
             </div>
             <div class="chat-header-text">
                 <span class="header">{{ header }}
-                    <span class="status" v-if="chatData?.chat_type === 'P'">"{{ chatDescribe.status }}"</span>
+                    <span class="status" v-if="chatData?.chat_type === 'P' && chatDescribe.status">"{{ chatDescribe.status }}"</span>
                 </span>
                 <span v-if="chatData?.chat_type === 'G'">
                     {{ chatDescribe.amountUsers }} участников

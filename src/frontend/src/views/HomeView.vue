@@ -78,6 +78,10 @@ export default {
               addChat(data.new_chat)
               store.commit('updateCreateGroupError', {error: ""})
               store.commit('updateCreatePrivateError', {error: ""})
+              if (data.new_chat.chat_type === 'P') {
+                const newUser = data.new_chat.current_users.find(currentUser => currentUser.username !== store.getters.getUserName);
+                store.commit('addRelatedUserMutation', {user: {"name": newUser.name, "value": newUser.username}});
+              }
             }
         } else if (data.error && data.chat_type) {
           if (data.chat_type === 'G') {
