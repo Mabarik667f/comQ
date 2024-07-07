@@ -36,7 +36,7 @@ export default {
                 if (ws.value.readyState === WebSocket.OPEN) {
                 ws.value.send(
                     JSON.stringify({
-                        message_type: 'chat.clear_notifications',
+                        "message_type": 'chat.clear_notifications'
                     })
                 );
                 } else {
@@ -45,7 +45,7 @@ export default {
                         store.dispatch('checkTokenLifeTime')
                         ws.value.send(
                             JSON.stringify({
-                                message_type: 'chat.clear_notifications',
+                                "message_type": 'chat.clear_notifications'
                             })
                         );
                     }, { once: true });
@@ -70,9 +70,9 @@ export default {
             } else {
                 ws.value.send(
                     JSON.stringify({
-                        message: formData.value.message,
-                        message_type: 'chat.message',
-                        reply: formData.value.reply
+                        "message": formData.value.message,
+                        "message_type": 'chat.message',
+                        "reply": formData.value.reply
                     })
                 );
             }
@@ -82,10 +82,10 @@ export default {
             store.dispatch('checkTokenLifeTime')
             ws.value.send(
                 JSON.stringify({
-                    message_type: 'chat.edit_message',
-                    message_id: editingMessage.value.id,
-                    message_text: formData.value.message,
-                    chat: chat.value.pk
+                    "message_type": 'chat.edit_message',
+                    "message_id": editingMessage.value.id,
+                    "message_text": formData.value.message,
+                    "chat": chat.value.pk
                 })
             )
         }
@@ -95,8 +95,8 @@ export default {
             store.dispatch('checkTokenLifeTime')
             ws.value.send(
                 JSON.stringify({
-                    message_type: 'chat.delete_message',
-                    message_id: deleteCandidat.value
+                    "message_type": 'chat.delete_message',
+                    "message_id": deleteCandidat.value
                 })
             )
             togglePopup('buttonTrigger')
@@ -106,7 +106,7 @@ export default {
             store.dispatch('checkTokenLifeTime')
             ws.value.send(
                 JSON.stringify({
-                    message_type: 'chat.delete_chat',
+                    "message_type": 'chat.delete_chat'
                 })
             )
             togglePopup('buttonTrigger')
@@ -116,9 +116,9 @@ export default {
             store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
-                    message_type: 'chat.delete_user',
-                    deleted_user: user,
-                    chat_pk: chatId.value
+                    "message_type": 'chat.delete_user',
+                    "deleted_user": user,
+                    "chat_pk": chatId.value
                 })
             )
         }
@@ -127,8 +127,8 @@ export default {
             store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
-                    message_type: 'chat.leave_user',
-                    chat_pk: chatId.value
+                    "message_type": 'chat.leave_user',
+                    "chat_pk": chatId.value
                 })
             )
         }
@@ -137,9 +137,9 @@ export default {
             store.dispatch('checkTokenLifeTime')
             hub.value.send(
                 JSON.stringify({
-                    message_type: 'chat.add_user',
-                    users: addedUsers,
-                    chat_pk: chatId.value
+                    "message_type": 'chat.add_user',
+                    "users": addedUsers,
+                    "chat_pk": chatId.value
                 })
             )
         }

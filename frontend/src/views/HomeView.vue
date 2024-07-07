@@ -46,11 +46,12 @@ export default {
         store.dispatch('addRelatedUser', {user: {value: user.username, name: user.name}})
       })
 
+      hubInit()
+
     };  
 
-    const hub = computed(() => store.getters.getHub)
-
-    hub.value.onmessage = function(e) {
+    const hubInit = () => {
+      hub.value.onmessage = function(e) {
         const data = JSON.parse(e.data)
         if (data.new_users) {
             chatId.value = data.chat.pk
@@ -91,13 +92,17 @@ export default {
           }
         }
 
+      }
     }
+
+    const hub = computed(() => store.getters.getHub)
 
     const addChat = async (chat) => {
       await cleanChatData(chat)
     }
 
     onMounted(async () => {
+      store.commit('setHub')
       fetchUserData();
     });
 

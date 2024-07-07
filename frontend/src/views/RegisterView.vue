@@ -140,6 +140,10 @@ export default {
     box-shadow: none;
 }
 
+.form-text {
+    color: whitesmoke;
+}
+
 @media screen and (max-width: 768px) {
     .register {
         width: 90%;

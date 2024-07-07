@@ -11,9 +11,11 @@ click-repl==0.3.0
 Django==5.0.4
 django-cors-headers==4.3.1
 django-extensions==3.2.3
+django-redis==5.4.0
 djangorestframework==3.15.1
 djangorestframework-simplejwt==5.3.1
 drf-yasg==1.21.7
+gunicorn==22.0.0
 h11==0.14.0
 h2==4.1.0
 hpack==4.0.0

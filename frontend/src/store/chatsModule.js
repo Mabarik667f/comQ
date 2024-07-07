@@ -6,7 +6,7 @@ import Cookies from "js-cookie"
 export const chatsModule = {
     state: () => ({
         chats: [],
-        hub: new WebSocket(getWebSocketURL(`ws/hub/?token=${Cookies.get("access")}`)),
+        hub: '',
         websockets: {}
     }),
     getters: {
@@ -36,6 +36,10 @@ export const chatsModule = {
     mutations: {
         setChats(state, {chats}) {
             state.chats = chats
+        },
+
+        setHub(state) {
+            state.hub = new WebSocket(getWebSocketURL(`sockets/hub/?token=${Cookies.get("access")}`));
         },
 
         updateWebsockets(state, {id, ws}) {

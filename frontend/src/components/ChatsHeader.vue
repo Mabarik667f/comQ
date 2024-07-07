@@ -32,7 +32,7 @@ export default {
                     "message_type": "chat.new_chat",
                     "data": {"current_users": [createPrivateForm.value.username],
                             "chat_type": createPrivateForm.value.chat_type,
-                            "host": jwtDecode(Cookies.get('access'))['user_id']}
+                            "host": jwtDecode(Cookies.get("access"))["user_id"]}
                 })
             )
             showPrivateDialog()
@@ -51,7 +51,7 @@ export default {
                     "data": {"current_users": currentUsers,
                             "chat_type": createGroupForm.value.chat_type,
                             "host": jwtDecode(Cookies.get('access'))['user_id']},
-                    "title": createGroupForm.value.title
+                            "title": createGroupForm.value.title
                 })
             )
             showGroupDialog()
