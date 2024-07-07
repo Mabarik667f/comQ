@@ -24,8 +24,6 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 from rest_framework import permissions
 
-from .settings import MEDIA_URL, MEDIA_ROOT
-
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -52,6 +50,5 @@ urlpatterns = [
     path('v1/main/', include('chats.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
-    urlpatterns += staticfiles_urlpatterns()
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += staticfiles_urlpatterns()

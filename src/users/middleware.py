@@ -7,7 +7,9 @@ from django.conf import settings
 from datetime import datetime
 
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
 from django.db import close_old_connections
+from django.utils import timezone
 from users.models import CustomUser
 
 
@@ -32,6 +34,11 @@ def get_user(token):
     return user
 
 
+@database_sync_to_async
+def update_last_login(scope):
+    CustomUser.objects.filter(pk=scope['user'].pk).update(last_login=timezone.now())
+
+
 class TokenAuthMiddleware(BaseMiddleware):
 
     async def __call__(self, scope, receive, send):
@@ -42,7 +49,15 @@ class TokenAuthMiddleware(BaseMiddleware):
             token_key = None
 
         scope['user'] = await get_user(token_key)
+        cache_key = f"last-seen-{scope['user'].pk}"
+        last_login = cache.get(cache_key)
+
+        if not last_login:
+            await update_last_login(scope)
+            cache.set(cache_key, timezone.now(), 300)
+
         return await super().__call__(scope, receive, send)
+
 
 def JWTAuthMiddleWareStack(inner):
     return TokenAuthMiddleware(inner)

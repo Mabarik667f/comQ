@@ -60,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'chats.middleware.ExceptionMiddleware'
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -83,12 +84,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
+REDIS_PORT = os.getenv('REDIS_PORT')
+REDIS_HOST = os.getenv('REDIS_HOST')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
 
 CHANNEL_LAYERS = {
     'default': {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [('localhost', 6379)]
+            "hosts": [(REDIS_HOST, REDIS_PORT)]
         }
     }
 }
@@ -135,15 +148,54 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
+        'users-file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': f"{BASE_DIR}/logs/log.log",
+            'filename': f"{BASE_DIR}/logs/users.log",
             'formatter': 'custom_formatter',
             'encoding': 'utf-8'
         },
+        'consumer-file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': f"{BASE_DIR}/logs/consumer.log",
+            'formatter': 'custom_formatter',
+            'encoding': 'utf-8'
+        },
+        'chats-file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': f"{BASE_DIR}/logs/chats.log",
+            'formatter': 'custom_formatter',
+            'encoding': 'utf-8'
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        }
     },
-    'loggers': {},
+    'loggers': {
+        'consumer': {
+            "handlers": ['consumer-file'],
+            "level": 'INFO',
+            "propagate": True
+        },
+        'chats': {
+            "handlers": ['chats-file'],
+            "level": 'INFO',
+            "propagate": True
+        },
+        "users": {
+            "handlers": ['users-file'],
+            "level": 'INFO',
+            "propagate": True
+        },
+        "root": {
+            "handlers": ['console'],
+            "level": "INFO",
+            "propagate": True
+        }
+    },
 }
 
 # Internationalization
@@ -185,9 +237,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_TRUSTED_ORIGINS = []
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:8080",
+    '*'
 ]
 
 CORS_ALLOW_METHODS = (
@@ -203,7 +253,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
+    ],
 }
 
 AUTH_USER_MODEL = "users.CustomUser"
