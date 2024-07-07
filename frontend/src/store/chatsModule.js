@@ -1,11 +1,12 @@
 import cleanChatData from "@/hooks/chatHooks/cleanChatData";
+import getWebSocketURL from "@/hooks/websockets"
 import router from "@/router";
 import Cookies from "js-cookie"
 
 export const chatsModule = {
     state: () => ({
         chats: [],
-        hub: new WebSocket(`ws://localhost:8000/ws/hub/?token=${Cookies.get("access")}`),
+        hub: new WebSocket(getWebSocketURL(`ws/hub/?token=${Cookies.get("access")}`)),
         websockets: {}
     }),
     getters: {

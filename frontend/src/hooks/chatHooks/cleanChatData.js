@@ -1,6 +1,7 @@
 import Cookies from 'js-cookie';
 import getUserDataOnChat from '@/hooks/getUserDataOnChat';
 import groupChatDetail from '@/hooks/chatHooks/groupChatDetail';
+import getWebSocketURL from "@/hooks/websockets"
 import { ref } from 'vue';
 import store from '@/store';
 
@@ -25,7 +26,7 @@ export default async function cleanChatData(chat) {
     }
 
     if (!store.getters.getWebSocketById(chat.pk) && !store.getters.getChat(chat.pk)) {
-        const ws = new WebSocket(`ws://localhost:8000/ws/chat/${chat.pk}/?token=${Cookies.get("access")}`);
+        const ws = new WebSocket(getWebSocketURL(`ws/chat/${chat.pk}/?token=${Cookies.get("access")}`));
         store.commit('updateWebsockets', {id: chat.pk, ws: ws});
         store.commit('updateChats', {chat: chat})
     }

@@ -240,7 +240,7 @@ export default {
     margin: auto;
 }
 
-:deep .multiselect {
+:deep(.multiselect) {
     max-width: 250px !important;
 }
 
