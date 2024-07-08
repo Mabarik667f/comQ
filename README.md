@@ -1,6 +1,6 @@
 # dev commands
 ```
-gunicorn --debug --reload config.wsgi:application
+gunicorn --reload config.wsgi:application
 hypercorn --debug --reload config.asgi:application
 ```
 # dev frontend (frontend dir)

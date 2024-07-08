@@ -63,7 +63,7 @@ export default {
 
             </div>
             <div class="mb-3">
-            <label for="emailInput" class="form-label">Логин или Email</label>
+            <label for="emailInput" class="form-label">Email</label>
                 <com-input
                 required
                 v-model="formData.email"
