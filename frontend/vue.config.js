@@ -2,11 +2,11 @@ const { defineConfig } = require('@vue/cli-service');
 const path = require('path');
 const dotenv = require('dotenv');
 
-dotenv.config({path: path.resolve(__dirname, '../.env')})
+dotenv.config({path: path.resolve(__dirname, '../.env.docker')})
 
 const host = process.env.VUE_APP_HOST || '127.0.0.1';
 const port = process.env.VUE_APP_PORT || 8000;
-// const protocol = process.env.VUE_APP_PROTOCOL || 'http';
+const protocol = process.env.VUE_APP_PROTOCOL || 'http';
 
 
 module.exports = defineConfig({
@@ -15,12 +15,12 @@ module.exports = defineConfig({
   devServer: {
     proxy: {
       '/v1': {
-        target: `http://${host}:${port}`,
+        target: `${protocol}://${host}:${port}`,
         changeOrigin: true,
         logLevel: 'debug'
       },
       '/media': {
-        target: `http://${host}:${port}`,
+        target: `${protocol}://${host}:${port}`,
         changeOrigin: true,
         logLevel: 'debug'
       }
