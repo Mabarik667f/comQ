@@ -35,7 +35,6 @@ export default {
                             "host": jwtDecode(Cookies.get("access"))["user_id"]}
                 })
             )
-            showPrivateDialog()
         }
 
 
@@ -157,15 +156,14 @@ export default {
                 </template>
                 <template v-slot:fields>
                     <div class="mb-4">
-                    <span v-if="errors.newPrivateChat" class="form-errors">{{ errors.newPrivateChat }}</span>
                     <label :for="'newPrivateChat'">Уникальное имя пользователя</label>
                     <com-input :id="'newPrivateChat'" 
                     class="form-control newPrivate"
                     :placeholder="'Ivan1234'"
                     v-model="createPrivateForm.username"
                     required></com-input>
+                    <span v-if="errors.newPrivateChat" class="form-errors">{{ errors.newPrivateChat }}</span>
                     </div>
-
                 </template>
                 <template v-slot:button>
                     <com-button>Создать</com-button>

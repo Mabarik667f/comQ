@@ -39,7 +39,10 @@ export const userDataModule = {
             state.sidebarWidth = width
         },
         addRelatedUserMutation(state, {user}) {
-            state.relatedUsers.push(user)
+            const userExists = state.relatedUsers.some(existingUser => existingUser.id === user.id);
+            if (!userExists) {
+                state.relatedUsers.push(user);
+            }
         },
         deleteUserMutation(state, {user}) {
             state.relatedUsers = state.relatedUsers.filter(u => u.id !== user.id)

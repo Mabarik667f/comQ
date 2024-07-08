@@ -13,7 +13,7 @@ export default {
             require: true
         }
     },
-    emits: ['showContextMenu'],
+    emits: ['showContextMenu', 'leaveUser'],
     setup(props, {emit}) {
         
         const user = ref(props.user);
@@ -41,8 +41,12 @@ export default {
             emit("showContextMenu", event, props.user)
         };
 
+        const leaveUser = () => {
+            emit('leaveUser')
+        }
+
         return {store, chat, isAdmin, popupTriggers, 
-            togglePopup, showContextMenu}
+            togglePopup, showContextMenu, leaveUser}
     }
 }
 </script>

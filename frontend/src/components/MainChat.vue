@@ -217,7 +217,8 @@ export default {
                         </div>
                         <div v-for="user in chat?.current_users" :key="user">
                             <UserCard :user="user" :chatId="parseInt(chatId)" 
-                            @showContextMenu="showContextMenu">
+                            @showContextMenu="showContextMenu"
+                            @leaveUser="leaveUserToRoomHook">
                             </UserCard>
                         </div>
                     </div>
