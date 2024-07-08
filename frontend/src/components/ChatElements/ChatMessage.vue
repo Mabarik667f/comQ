@@ -44,7 +44,7 @@ export default {
             const monthIndex = parseInt(month) - 1;
             const monthGenitive = monthsGenitive[monthIndex];
 
-            return `${parseInt(day)} ${monthGenitive} ${year} ${hour}:${minute}`;
+            return `${parseInt(day)} ${monthGenitive} ${year} ${parseInt(hour)+3}:${minute}`;
 
         }
         messageDate.value = formattedDate();
