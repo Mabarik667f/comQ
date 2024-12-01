@@ -236,10 +236,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = []
 
-CORS_ALLOWED_ORIGINS = [
-    '*'
-]
-
 CORS_ALLOW_METHODS = (
     *default_methods,
     "POKE"
